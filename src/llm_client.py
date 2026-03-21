@@ -32,8 +32,8 @@ PROVIDERS: dict[str, dict] = {
         "native_sdk": False,
     },
     "glm": {
-        "base_url": "https://open.bigmodel.cn/api/paas/v4",
-        "default_model": "glm-4",
+        "base_url": os.environ.get("GLM_BASE_URL", "https://open.bigmodel.cn/api/paas/v4"),
+        "default_model": os.environ.get("GLM_MODEL", "glm-4"),
         "api_key_env": "GLM_API_KEY",
         "native_sdk": False,
     },

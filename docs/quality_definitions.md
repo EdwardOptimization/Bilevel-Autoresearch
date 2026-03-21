@@ -34,13 +34,13 @@ produces an improved version of the article. Quality is measured by a
 
 The pipeline stages are repurposed from scientific research to article optimization:
 
-| Original Stage | Repurposed Role |
-|---------------|-----------------|
-| A: Literature Scan | Analyze current article state; identify all weaknesses against the rubric |
-| B: Hypothesis Generation | Generate improvement hypotheses (H1–H4); each must name a specific weakness and proposed fix |
-| C: Experiment Plan | Draft a concrete edit plan: which section, what change, why it addresses the hypothesis |
-| D: Result Summary | Simulate post-edit evaluation: predict how each hypothesis fix improves the rubric score |
-| E: Draft Writeup | Output the revised article sections implementing the approved plan |
+| Stage | Role |
+|-------|------|
+| A: Article Analysis | Analyze current article state; identify all weaknesses against the rubric |
+| B: Improvement Hypotheses | Generate H1–H4; each must name a specific weakness and a concrete proposed fix |
+| C: Edit Planning | Draft a concrete edit plan: which section, what change, why it addresses the hypothesis |
+| D: Impact Assessment | Simulate post-edit evaluation: predict how each fix improves rubric scores |
+| E: Revised Output | Write the revised article sections implementing the approved plan |
 
 ---
 
@@ -64,55 +64,136 @@ the inner loop converge faster, independent of article content.
 
 ### Outer Loop Convergence Criteria
 
-- **Converged**: Inner loop consistently reaches ≥8/10 in ≤10 iterations across
-  2 different articles
+- **Converged**: Inner loop consistently reaches ≥8/10 in ≤10 iterations across 2 different articles
 - **Max outer budget**: 5 outer iterations (each inner cycle costs ~20 runs)
 - **Outer evaluator**: Scores the *process trace*, not the article quality directly
 
-### Reset Policy
+---
 
-Each outer iteration **resets**:
-- Article content → restored to original version
-- Inner loop lesson memory → cleared (start from zero inner lessons)
+## State Boundary: What Gets Reset and What Persists
 
-Each outer iteration **preserves**:
-- Pipeline configuration (prompts, rubric design, token budgets, injection strategy)
-- Outer-loop lessons and skills (accumulated cross-iteration knowledge about process quality)
+This section defines the exact state boundary between the inner and outer loops.
+Getting this boundary wrong collapses the two layers into one.
 
-**Rationale**: This isolates what the outer loop is measuring — the speed and
-quality of the optimization process itself, starting from scratch each time.
-Analogous to MAML: the outer loop learns a good optimizer initialization;
-the inner loop demonstrates how well that optimizer works from a cold start.
+### Complete Inner Loop State Inventory
+
+| State Item | Description | On Outer Reset |
+|------------|-------------|----------------|
+| Article working copy | The version currently being optimized | ✅ Restore to original |
+| Inner lessons | Structured JSON extracted after each run | ✅ Clear |
+| Inner skills | Markdown files distilled from inner lessons | ✅ Clear (article-specific, not process-general) |
+| Stage output artifacts | A/B/C/D/E outputs from every run | ✅ Clear (archive best first — see below) |
+| Run trace | `(run_n, score_A, score_B, ..., score_overall)` sequence | ✅ Clear (extract to outer first) |
+| Evaluator feedback text | Textual explanation behind each score | ✅ Clear (extract patterns to outer first) |
+| Quality gate retry log | Which stage retried, how many times, retry context | ✅ Clear |
+
+### Outer Loop State (Persists Across All Outer Iterations)
+
+| State Item | Description | Never Reset |
+|------------|-------------|-------------|
+| Pipeline config | Stage prompts, token budgets, rubric sub-criteria, injection strategy | ✅ Persists |
+| Outer lessons | Process-level lessons: "Reflexion reduced Stage B variance in outer cycle 2" | ✅ Persists |
+| Outer skills | Distilled process strategies, referenced by name from `reference_frameworks.md` | ✅ Persists |
+| Strategy history | Which frameworks were tried per outer iteration and their measured effect | ✅ Persists |
+| Iteration summaries | Per outer iteration: convergence speed, peak quality, generalization result | ✅ Persists |
+| Calibration article | A fixed held-out article used only for rubric calibration checks | ✅ Persists, never modified |
+
+### Archive Before Reset
+
+Before clearing inner state, the outer loop saves:
+- Best-scoring article version → `examples/outer_cycle_{N}_best_article.md`
+- Full run trace → `examples/outer_cycle_{N}_trace.json`
+- Evaluator feedback patterns → extracted into outer lesson (not re-injected as content)
+
+These are **archival only** — the next inner cycle does NOT receive them as input.
+
+---
+
+## Information Flow: What Crosses the Layer Boundary
+
+### Inner → Outer (Extraction, after inner cycle ends)
+
+**Allowed (process-level signals):**
+- Convergence trace: `[(run_n, overall_score), ...]`
+- Stage failure pattern: which stage was most volatile, highest retry rate
+- Lesson quality distribution: confidence histogram, lesson_type breakdown
+- Evaluator dimension patterns: which rubric dimension was repeatedly cited as weak
+- Strategy effectiveness: did the injected strategy (e.g., Reflexion) reduce variance?
+- Token truncation events: which stage, how often
+
+**Archived but not re-injected (content-level):**
+- Best article version → saved to `examples/`, not fed back as starting content
+
+### Outer → Inner (Injection, at start of next inner cycle)
+
+**Allowed (process-level):**
+- Updated stage prompts (rewritten based on outer analysis)
+- Updated rubric sub-criteria (more precise scoring guidance within each dimension)
+- Updated token budgets
+- Strategy activation: "use Self-Refine loop inside Stage C this cycle"
+- Few-shot stage examples from prior high-scoring outputs (DSPy pattern)
+- Reference framework selection: which strategy to emphasize from `reference_frameworks.md`
+- Pipeline structure changes: e.g., add intra-stage critique-refine sub-loop
+
+**Forbidden (content-level):**
+- Previous cycle's improved article content (bypasses inner loop's job)
+- Inner lessons or inner skills from any previous cycle (article-specific knowledge)
+- Specific textual edits to the article ("add this sentence to paragraph 3")
+- Evaluator score history (evaluator must score fresh every run)
+
+---
+
+## Rubric Stability Constraint
+
+The outer loop may refine rubric **sub-criteria** (how to score within each dimension),
+but must never shift the scoring baseline.
+
+**Check required after any rubric change:**
+Score the calibration article with old and new rubric. If overall score shifts by
+more than ±0.5 points, the change is rejected — it distorts the convergence metric.
+
+---
+
+## Outer Loop's Own Memory System
+
+The outer loop requires its own lesson/skill system, separate from the inner loop's:
+
+```
+Inner loop memory  →  article-specific patterns  →  cleared on reset
+Outer loop memory  →  process-level patterns     →  never cleared
+```
+
+**Outer lesson schema:**
+```json
+{
+  "outer_cycle": 2,
+  "lesson_type": "strategy_effectiveness",
+  "strategy_used": "reflexion_postmortem",
+  "inner_convergence_before": 16,
+  "inner_convergence_after": 11,
+  "stage_affected": "hypothesis_generation",
+  "summary": "Reflexion-style failure postmortems reduced Stage B variance from ±2.1 to ±0.8",
+  "reuse_rule": "Apply Reflexion postmortems when Stage B score variance across 3 consecutive runs exceeds ±1.5",
+  "confidence": 0.88
+}
+```
 
 ---
 
 ## Relationship Between Layers
 
 ```
-Outer Loop (optimizes pipeline config)
-    │
-    │  "what configuration makes inner converge fastest?"
+Outer Loop (optimizes pipeline config P_t)
+    │  extracts: convergence trace, failure patterns, strategy effectiveness
+    │  injects:  updated prompts, token budgets, strategy activation, few-shot examples
     ▼
 Inner Loop × N runs (optimizes article content)
-    │
-    │  "what edits make this article score ≥8/10?"
+    │  article resets to original each outer iteration
+    │  inner memory clears each outer iteration
     ▼
 Article Quality Score (A/B/C/D/E rubric)
 ```
 
-The outer loop's α (error multiplier) is itself being minimized — the exact
-dual-layer structure described in `autoresearch_meta_optimization.md`.
-
----
-
-## What the Outer Loop Cannot Change
-
-To keep the two layers cleanly separated, the outer loop is **not** allowed to:
-
-- Modify the article content directly
-- Change the evaluation rubric's 5 dimensions (only the sub-criteria within each)
-- Skip inner iterations to save time
-- Access inner loop lesson memory during its own optimization step
-
-These constraints prevent the outer loop from "cheating" by directly editing
-the article rather than improving the pipeline that edits it.
+The outer loop's α (error multiplier from `autoresearch_meta_optimization.md`) is
+itself being minimized across outer iterations. This is the dual-layer structure:
+inner loop reduces article quality error; outer loop reduces inner loop's α.
