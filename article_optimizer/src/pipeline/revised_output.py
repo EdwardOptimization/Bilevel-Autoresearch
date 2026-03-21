@@ -65,7 +65,7 @@ class RevisedOutputStage(BaseStage):
         plan_excerpt = edit_plan[:3500] if len(edit_plan) > 3500 else edit_plan
         impact_excerpt = impact[:1500] if len(impact) > 1500 else impact
 
-        if len(article) <= 3000:
+        if len(article) <= 8000:
             revised = self._revise_whole(article, plan_excerpt, impact_excerpt, retry_section)
         else:
             revised = self._revise_by_section(article, plan_excerpt, impact_excerpt, retry_section)

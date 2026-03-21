@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from src.llm_client import call_llm, configure, parse_json_response
+from src.llm_client import LLMClient, parse_json_response
 
 from .inner_loop import InnerLoopController
 from .runner import InnerRunner
@@ -51,7 +51,9 @@ class OuterAnalyzer:
         outer_cycle: int,
     ) -> dict:
         """Run DeepSeek meta-analysis. Returns structured dict with config changes."""
-        configure("deepseek", self.api_key, self.model)
+        # Use LLMClient (instance-scoped) — never mutates the module-level globals
+        # that the inner loop's MiniMax stages depend on.
+        client = LLMClient("deepseek", self.api_key, self.model)
 
         prompt = f"""
 {outer_context}
@@ -99,7 +101,7 @@ Rules:
 - If inner loop converged quickly (≤8 runs), focus on why it worked — positive lessons count
 """
 
-        raw = call_llm(prompt, system=OUTER_SYSTEM, model=self.model, max_tokens=3000)
+        raw = client.call(prompt, system=OUTER_SYSTEM, max_tokens=3000)
         result = parse_json_response(raw)
 
         if not isinstance(result, dict) or "raw_content" in result:

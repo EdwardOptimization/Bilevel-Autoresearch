@@ -94,7 +94,9 @@ For "overall": compute the average of all 5 scores (1 decimal place).
 For "verdict": "weak" if overall < 6, "pass" if 6-7, "strong" if ≥ 8.
 For "below_threshold": list dimensions where score is below target (A,B,C < 8; D,E < 7)."""
 
-        raw = call_llm(prompt, system=EVALUATOR_SYSTEM, model=self.model, max_tokens=2000)
+        # MiniMax M2.7-highspeed is a reasoning model: <think> blocks consume
+        # many tokens before the actual JSON output begins.  Use a large budget.
+        raw = call_llm(prompt, system=EVALUATOR_SYSTEM, model=self.model, max_tokens=6000)
         result = parse_json_response(raw)
 
         if not isinstance(result, dict) or "raw_content" in result:

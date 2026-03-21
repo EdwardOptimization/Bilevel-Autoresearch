@@ -10,8 +10,7 @@ See docs/quality_definitions.md §"State Boundary" for the full design rationale
 from __future__ import annotations
 
 import json
-import shutil
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -299,10 +298,11 @@ class OuterLoopState:
         Outer loop converged when inner loop reaches ≥8/10 in ≤target_inner_runs
         across the last 2 consecutive outer iterations.
         """
-        recent = [s for s in self.iteration_summaries[-2:] if s.get("runs_to_threshold_8")]
+        recent = self.iteration_summaries[-2:]
         if len(recent) < 2:
             return False
-        return all(s["runs_to_threshold_8"] <= target_inner_runs for s in recent)
+        convergences = [s.get("runs_to_threshold_8") for s in recent]
+        return all(c is not None and c <= target_inner_runs for c in convergences)
 
     # ── Cycle management ──────────────────────────────────────────────────────
 

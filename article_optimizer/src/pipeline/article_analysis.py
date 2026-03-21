@@ -96,7 +96,7 @@ Analysis:
 {content[:3000]}
 
 Return ONLY the JSON object."""
-        score_raw = call_llm(score_prompt, model=self.model, max_tokens=256)
+        score_raw = call_llm(score_prompt, model=self.model, max_tokens=2000)
         scores = parse_json_response(score_raw)
         if isinstance(scores, dict) and "raw_content" not in scores:
             artifacts.append(self._save_artifact(

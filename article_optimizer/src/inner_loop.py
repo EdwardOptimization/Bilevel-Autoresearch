@@ -54,6 +54,7 @@ class InnerLoopController:
         """
         inner = outer_state.build_inner_state(article_id)
         self.runner.prompt_overrides = outer_state.prompt_overrides
+        self.runner.outer_cycle = outer_state.current_cycle
 
         logger.info(
             f"[Outer cycle {outer_state.current_cycle}] "

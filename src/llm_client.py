@@ -17,6 +17,7 @@ from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
+
 # ── Provider registry ─────────────────────────────────────────────────────────
 PROVIDERS: dict[str, dict] = {
     "deepseek": {
@@ -218,3 +219,55 @@ def parse_json_response(text: str) -> dict | list:
 
     logger.debug("parse_json_response: could not find valid JSON, returning raw_content")
     return {"raw_content": text}
+
+
+# ── Instance-level client (no global state mutation) ──────────────────────────
+
+class LLMClient:
+    """
+    Instance-level LLM client.
+
+    Use this instead of configure() + call_llm() when multiple providers must
+    coexist in the same process (e.g. inner loop uses MiniMax, outer loop uses
+    DeepSeek).  Does not touch module-level globals.
+    """
+
+    def __init__(self, provider: str, api_key: str = "", model: str = ""):
+        if provider not in PROVIDERS:
+            raise ValueError(f"Unknown provider '{provider}'. Choose from: {list(PROVIDERS)}")
+        pinfo = PROVIDERS[provider]
+        self._api_key = api_key or os.environ.get(pinfo["api_key_env"], "")
+        self._model = model or pinfo["default_model"]
+        self._base_url = pinfo["base_url"]
+        self._native_sdk = pinfo["native_sdk"]
+
+    def call(
+        self,
+        prompt: str,
+        system: str = None,
+        max_tokens: int = 4096,
+        max_retries: int = 3,
+        retry_delay: float = 2.0,
+    ) -> str:
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                if self._native_sdk:
+                    text = _call_anthropic(prompt, system, self._model, max_tokens, self._api_key)
+                else:
+                    text = _call_openai_compat(
+                        prompt, system, self._model, max_tokens, self._api_key, self._base_url
+                    )
+                return _strip_thinking_tags(text)
+            except Exception as exc:
+                last_error = exc
+                if attempt < max_retries - 1:
+                    wait = retry_delay * (2 ** attempt)
+                    logger.warning(
+                        f"LLM call failed (attempt {attempt + 1}/{max_retries}): {exc}. "
+                        f"Retrying in {wait:.1f}s..."
+                    )
+                    time.sleep(wait)
+        raise RuntimeError(
+            f"LLM call failed after {max_retries} attempts: {last_error}"
+        ) from last_error

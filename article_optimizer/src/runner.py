@@ -10,14 +10,14 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import sys
-from datetime import datetime
 from pathlib import Path
 
-# Add parent repo src to path for shared llm_client
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-from llm_client import call_llm, configure, parse_json_response
+# Add project root to path so "src.llm_client" resolves to the same module
+# instance that cli.py configures (avoids "deepseek" default in a separate
+# bare-import "llm_client" module).
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from src.llm_client import call_llm, configure, parse_json_response
 
 from .evaluator.article_evaluator import ArticleEvaluator
 from .pipeline.article_analysis import ArticleAnalysisStage
@@ -71,11 +71,16 @@ class InnerRunner:
         self.evaluator = ArticleEvaluator(model=eval_model)
         # Outer loop injects additional stage guidance here (persists across inner resets)
         self.prompt_overrides: dict[str, str] = {}
+        # Set by InnerLoopController before each cycle; used for artifact path namespacing
+        self.outer_cycle: int = 0
 
     def run_once(self, inner_state: InnerLoopState) -> RunResult:
         """Execute one full pipeline pass. Updates inner_state and returns RunResult."""
         run_num = len(inner_state.run_trace) + 1
-        run_dir = self.artifacts_base / f"run_{run_num:03d}"
+        if self.outer_cycle:
+            run_dir = self.artifacts_base / f"cycle_{self.outer_cycle:02d}" / f"run_{run_num:03d}"
+        else:
+            run_dir = self.artifacts_base / f"run_{run_num:03d}"
         run_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"[Run {run_num}] Starting — article: {inner_state.article_id}")
@@ -223,7 +228,7 @@ Return JSON array:
   }}
 ]"""
 
-        raw = call_llm(prompt, system=LESSON_SYSTEM, model=self.model, max_tokens=1500)
+        raw = call_llm(prompt, system=LESSON_SYSTEM, model=self.model, max_tokens=4000)
         parsed = parse_json_response(raw)
 
         if not isinstance(parsed, list):

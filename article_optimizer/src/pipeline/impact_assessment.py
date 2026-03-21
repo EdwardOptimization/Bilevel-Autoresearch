@@ -85,7 +85,7 @@ Impact assessment:
 {content[:2000]}
 
 Return ONLY the JSON object."""
-        score_raw = call_llm(score_prompt, model=self.model, max_tokens=256)
+        score_raw = call_llm(score_prompt, model=self.model, max_tokens=2000)
         predicted = parse_json_response(score_raw)
         if isinstance(predicted, dict) and "raw_content" not in predicted:
             artifacts.append(self._save_artifact(

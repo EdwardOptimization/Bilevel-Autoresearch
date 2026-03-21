@@ -76,7 +76,7 @@ Hypotheses:
 {content[:3000]}
 
 Return ONLY the JSON array."""
-        struct_raw = call_llm(struct_prompt, model=self.model, max_tokens=1024)
+        struct_raw = call_llm(struct_prompt, model=self.model, max_tokens=3000)
         struct = parse_json_response(struct_raw)
         if isinstance(struct, list):
             artifacts.append(self._save_artifact(
