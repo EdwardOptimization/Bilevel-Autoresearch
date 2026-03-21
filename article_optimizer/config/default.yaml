@@ -1,0 +1,64 @@
+# Article Optimizer Configuration
+
+provider: minimax
+model: MiniMax-M2.7-highspeed
+
+# Inner loop settings
+inner_loop:
+  max_iterations: 20
+  quality_gate_min_score: 6
+  convergence_threshold: 8
+  convergence_consecutive_runs: 3
+
+# Outer loop settings
+outer_loop:
+  max_iterations: 5
+  convergence_inner_runs: 10   # inner converges in ≤10 runs = outer success
+  peak_quality_target: 9
+  lesson_confidence_threshold: 0.85
+
+# Token budgets (MiniMax reasoning overhead: ~2000-3000 tokens per call)
+stage_tokens:
+  article_analysis: 8000
+  hypothesis_generation: 6000
+  edit_planning: 7000
+  impact_assessment: 5000
+  revised_output: 8000
+
+# Rubric dimensions
+rubric_dimensions:
+  - id: A
+    name: argumentative_rigor
+    target_score: 8
+    description: "Every core claim has a clear derivation chain or empirical support"
+  - id: B
+    name: conceptual_clarity
+    target_score: 8
+    description: "Key terms are defined; reader cannot misinterpret the central concept"
+  - id: C
+    name: cross_article_consistency
+    target_score: 8
+    description: "No contradictions between articles; cross-references are accurate"
+  - id: D
+    name: insight_novelty
+    target_score: 7
+    description: "Says something non-obvious that the reader cannot derive in 5 minutes"
+  - id: E
+    name: actionability
+    target_score: 7
+    description: "Reader knows what to do or how to update their thinking after reading"
+
+# Reference frameworks injected into outer loop context
+outer_loop_reference_doc: "../docs/reference_frameworks.md"
+
+# Article paths (reset to these on each outer iteration)
+articles:
+  - id: article1
+    path: "articles/article1_llm_research_depth.md"
+    title: "LLM Research Depth Convergence"
+  - id: article15
+    path: "articles/article15_meta_optimization.md"
+    title: "Autoresearch Meta-Optimization (Dual-Layer)"
+  - id: article2
+    path: "articles/article2_agent_team_scale.md"
+    title: "Agent Team Scale and Project Management"
