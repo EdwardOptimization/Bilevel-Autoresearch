@@ -209,7 +209,13 @@ MODEL_CONFIGS = {
         "provider": "deepseek",
         "api_key_env": "DEEPSEEK_API_KEY",
         "model": "deepseek-chat",
-        "label": "DeepSeek v3.2 (deepseek-chat)",
+        "label": "DeepSeek v3 (deepseek-chat)",
+    },
+    "minimax": {
+        "provider": "minimax",
+        "api_key_env": "MINIMAX_API_KEY",
+        "model": "MiniMax-M2.7-highspeed",
+        "label": "MiniMax M2.7-highspeed",
     },
 }
 
@@ -267,7 +273,7 @@ def run_test(model_key: str) -> dict:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--models", nargs="+", default=["glm"], choices=list(MODEL_CONFIGS))
+    parser.add_argument("--models", nargs="+", default=list(MODEL_CONFIGS), choices=list(MODEL_CONFIGS))
     args = parser.parse_args()
 
     # Load ~/.env if present
