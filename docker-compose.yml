@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  dashboard:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./memory:/app/memory
+      - ./config/local.yaml:/app/config/local.yaml:ro
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - MINIMAX_API_KEY=${MINIMAX_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GLM_API_KEY=${GLM_API_KEY:-}
+    restart: unless-stopped

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — EvoResearch{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="mb-8">
+  <h1 class="text-2xl font-bold text-white mb-1">Research Evolution Dashboard</h1>
+  <p class="text-slate-400 text-sm">Each run learns from the last. Watch the pipeline improve.</p>
+</div>
+
+<!-- Stats row -->
+<div class="grid grid-cols-3 gap-4 mb-8">
+  <div class="card p-5">
+    <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">Total Runs</div>
+    <div class="text-3xl font-bold text-white">{{ total_runs }}</div>
+  </div>
+  <div class="card p-5">
+    <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">Lessons in Memory</div>
+    <div class="text-3xl font-bold text-emerald-400">{{ total_lessons }}</div>
+  </div>
+  <div class="card p-5">
+    <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">Avg Score</div>
+    <div class="text-3xl font-bold {% if avg_score >= 7 %}text-green-400{% elif avg_score >= 5 %}text-orange-400{% else %}text-red-400{% endif %}">
+      {{ avg_score }}<span class="text-lg text-slate-500">/10</span>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-3 gap-6 mb-8">
+  <!-- Evolution chart -->
+  <div class="card p-5 col-span-2">
+    <div class="text-sm font-semibold text-slate-300 mb-4">Score Evolution Across Runs</div>
+    {% if total_runs > 0 %}
+    <canvas id="evolutionChart" height="120"></canvas>
+    <script>
+      const ctx = document.getElementById('evolutionChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: {{ chart_labels|safe }},
+          datasets: [{
+            label: 'Overall Score',
+            data: {{ chart_scores|safe }},
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16,185,129,0.1)',
+            borderWidth: 2,
+            pointBackgroundColor: '#10b981',
+            pointRadius: 4,
+            tension: 0.3,
+            fill: true,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { min: 0, max: 10, grid: { color: '#1e3a5f' }, ticks: { color: '#64748b' } },
+            x: { grid: { color: '#1e3a5f' }, ticks: { color: '#64748b' } }
+          }
+        }
+      });
+    </script>
+    {% else %}
+    <div class="flex items-center justify-center h-32 text-slate-500">
+      Run your first pipeline to see evolution here.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Lesson breakdown -->
+  <div class="card p-5">
+    <div class="text-sm font-semibold text-slate-300 mb-4">Memory by Type</div>
+    {% if lesson_type_counts %}
+    {% for ltype, count in lesson_type_counts.items() %}
+    <div class="flex items-center justify-between mb-3">
+      <span class="pill lt-{{ ltype }}">{{ ltype|replace('_', ' ')|title }}</span>
+      <span class="text-white font-semibold">{{ count }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="text-slate-500 text-sm">No lessons yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Runs table -->
+<div class="card p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div class="text-sm font-semibold text-slate-300">Recent Runs</div>
+    <a href="/memory" class="text-xs text-blue-400 hover:text-blue-300">View Memory →</a>
+  </div>
+
+  {% if runs %}
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-slate-500 text-xs uppercase tracking-wider border-b border-slate-800">
+        <th class="text-left pb-2 pr-4">Run ID</th>
+        <th class="text-left pb-2 pr-4">Topic</th>
+        <th class="text-center pb-2 pr-4">Score</th>
+        <th class="text-center pb-2 pr-4">Verdict</th>
+        <th class="text-center pb-2 pr-4">Lessons</th>
+        <th class="text-left pb-2">Model</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for run in runs %}
+    <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors cursor-pointer"
+        onclick="window.location='/run/{{ run.run_id }}'">
+      <td class="py-3 pr-4 font-mono text-xs text-slate-400">{{ run.run_id[-13:] }}</td>
+      <td class="py-3 pr-4 text-slate-300 max-w-xs truncate" title="{{ run.topic }}">{{ run.topic[:55] }}{% if run.topic|length > 55 %}…{% endif %}</td>
+      <td class="py-3 pr-4 text-center font-bold {{ run.run_review.score|default(0)|int|score_class }}">
+        {{ run.run_review.score|default('—') }}{% if run.run_review.score is defined %}/10{% endif %}
+      </td>
+      <td class="py-3 pr-4 text-center">
+        {% set v = run.run_review.overall_verdict|default('') %}
+        <span class="pill {{ v|verdict_class }}">{{ v or '—' }}</span>
+      </td>
+      <td class="py-3 pr-4 text-center text-emerald-400">{{ run.lessons_extracted|default('—') }}</td>
+      <td class="py-3 text-xs text-slate-500">{{ run.model|default('—') }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="text-center py-12 text-slate-500">
+    <div class="text-4xl mb-3">🔬</div>
+    <div class="text-sm">No runs yet. Start with:</div>
+    <code class="text-emerald-400 text-xs mt-2 block">research-evo run "your research topic"</code>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

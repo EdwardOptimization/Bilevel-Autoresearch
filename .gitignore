@@ -1,0 +1,29 @@
+# API keys and local config
+config/local.yaml
+.env
+
+# Runtime artifacts (don't commit research runs)
+artifacts/
+memory/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

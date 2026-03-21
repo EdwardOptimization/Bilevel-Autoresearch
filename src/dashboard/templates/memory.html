@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Memory — EvoResearch{% endblock %}
+{% block nav_memory %}active{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-white mb-1">Evolution Memory</h1>
+  <p class="text-slate-400 text-sm">{{ lessons|length }} lessons stored across all runs.</p>
+</div>
+
+<!-- Filters -->
+<form method="get" class="card p-4 mb-6 flex gap-4 flex-wrap items-end">
+  <div>
+    <label class="text-xs text-slate-400 uppercase tracking-wider block mb-1">Type</label>
+    <select name="lesson_type" class="bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded px-3 py-1.5 focus:outline-none focus:border-blue-500">
+      <option value="">All types</option>
+      {% for t in all_types %}
+      <option value="{{ t }}" {% if filter_type == t %}selected{% endif %}>{{ t|replace('_',' ')|title }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs text-slate-400 uppercase tracking-wider block mb-1">Stage</label>
+    <select name="stage" class="bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded px-3 py-1.5 focus:outline-none focus:border-blue-500">
+      <option value="">All stages</option>
+      {% for s in all_stages %}
+      <option value="{{ s }}" {% if filter_stage == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs text-slate-400 uppercase tracking-wider block mb-1">Min Confidence</label>
+    <select name="min_confidence" class="bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded px-3 py-1.5 focus:outline-none focus:border-blue-500">
+      <option value="0" {% if filter_confidence == 0 %}selected{% endif %}>Any</option>
+      <option value="0.5" {% if filter_confidence == 0.5 %}selected{% endif %}>≥ 50%</option>
+      <option value="0.7" {% if filter_confidence == 0.7 %}selected{% endif %}>≥ 70%</option>
+      <option value="0.9" {% if filter_confidence == 0.9 %}selected{% endif %}>≥ 90%</option>
+    </select>
+  </div>
+  <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-1.5 rounded transition-colors">Filter</button>
+  {% if filter_type or filter_stage or filter_confidence > 0 %}
+  <a href="/memory" class="text-slate-400 hover:text-slate-300 text-sm py-1.5">Clear</a>
+  {% endif %}
+</form>
+
+{% if lessons %}
+<div class="space-y-4">
+{% for lesson in lessons %}
+<div class="card p-5" x-data="{ open: false }">
+  <div class="flex items-start gap-3">
+    <span class="pill lt-{{ lesson.lesson_type }} mt-0.5 flex-shrink-0">
+      {{ lesson.lesson_type|replace('_',' ')|title }}
+    </span>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-xs text-slate-400 font-mono">{{ lesson.stage }}</span>
+        <span class="text-slate-600">·</span>
+        <span class="text-xs text-slate-500">{{ (lesson.confidence * 100)|int }}% confidence</span>
+        <span class="text-slate-600">·</span>
+        <span class="text-xs text-slate-500 font-mono">{{ lesson.created_from_run[-13:] }}</span>
+      </div>
+      <p class="text-sm text-slate-200 mb-2">{{ lesson.summary }}</p>
+      <div class="card-inner p-3">
+        <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Reuse Rule</div>
+        <p class="text-sm text-blue-300">{{ lesson.reuse_rule }}</p>
+      </div>
+      {% if lesson.anti_pattern %}
+      <div class="card-inner p-3 mt-2">
+        <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Avoid</div>
+        <p class="text-sm text-red-400">{{ lesson.anti_pattern }}</p>
+      </div>
+      {% endif %}
+    </div>
+    <div class="flex flex-col items-end gap-2 flex-shrink-0">
+      {% if lesson.topic_tags %}
+      <div class="flex flex-wrap gap-1 justify-end max-w-40">
+        {% for tag in lesson.topic_tags[:4] %}
+        <span style="background:#0c1a2e;color:#60a5fa;border:1px solid #1e3a8a;font-size:0.65rem;padding:1px 6px;border-radius:4px;">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <span class="text-xs text-slate-600 font-mono">{{ lesson.id }}</span>
+      {% if lesson.evidence %}
+      <button @click="open = !open" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+        Evidence <span x-text="open ? '▲' : '▼'">▼</span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  {% if lesson.evidence %}
+  <div x-show="open" x-cloak class="mt-3 border-t border-slate-700/50 pt-3">
+    <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Evidence</div>
+    {% for ev in lesson.evidence %}
+    <div class="text-xs text-slate-400 font-mono mb-1">{{ ev }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+</div>
+{% else %}
+<div class="card p-12 text-center">
+  <div class="text-4xl mb-3">🧠</div>
+  <div class="text-slate-400 text-sm">No lessons match your filters.</div>
+  {% if not filter_type and not filter_stage %}
+  <div class="text-slate-500 text-xs mt-2">Run the pipeline to start building memory.</div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

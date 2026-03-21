@@ -1,0 +1,24 @@
+# EvoResearch configuration
+# Copy this file to config/local.yaml for local overrides (it's gitignored)
+# API key priority: config file > environment variable
+
+provider:
+  name: minimax              # deepseek | openai | glm | minimax | anthropic
+  api_key: ""                # Leave empty — set via env var (e.g. MINIMAX_API_KEY)
+  model: "MiniMax-M2.7-highspeed"  # Leave empty to use provider default
+
+model:
+  max_tokens: 6000           # Generous budget for reasoning models
+
+memory:
+  max_retrieved_lessons: 5
+  min_confidence: 0.5
+
+quality_gate:
+  enabled: true
+  min_score: 6               # Re-run stage if score < this (5/10 weak triggers retry)
+  max_retries: 1             # Max retry attempts per stage
+
+paths:
+  artifacts_dir: artifacts
+  memory_dir: memory
