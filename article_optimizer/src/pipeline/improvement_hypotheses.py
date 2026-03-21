@@ -31,6 +31,7 @@ class ImprovementHypothesesStage(BaseStage):
 
         lessons_section = f"\n{lessons_text}\n" if lessons_text else ""
         retry_section = f"\n## Previous Attempt Feedback\n{retry_feedback}\n" if retry_feedback else ""
+        outer_section = self._outer_guidance(context)
         analysis_excerpt = analysis[:3000] if len(analysis) > 3000 else analysis
 
         prompt = f"""## Article (first 1500 chars for reference)
@@ -38,7 +39,7 @@ class ImprovementHypothesesStage(BaseStage):
 
 ## Article Analysis
 {analysis_excerpt}
-{lessons_section}{retry_section}
+{lessons_section}{outer_section}{retry_section}
 ## Your Task
 Generate exactly 4 improvement hypotheses based on the analysis above.
 

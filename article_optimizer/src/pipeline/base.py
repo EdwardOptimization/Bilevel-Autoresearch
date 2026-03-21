@@ -30,6 +30,14 @@ class BaseStage(ABC):
     @abstractmethod
     def run(self, context: dict) -> dict: ...
 
+    def _outer_guidance(self, context: dict) -> str:
+        """Return outer loop guidance for this stage, or empty string."""
+        overrides = context.get("outer_guidance", {})
+        text = overrides.get(self.name, "")
+        if text:
+            return f"\n## Outer Loop Guidance (from process optimization)\n{text}\n"
+        return ""
+
     def _save_artifact(self, run_dir: Path, filename: str, content: str) -> str:
         stage_dir = run_dir / "stages" / self.name
         full_path = stage_dir / filename

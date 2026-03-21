@@ -39,6 +39,7 @@ class EditPlanningStage(BaseStage):
 
         lessons_section = f"\n{lessons_text}\n" if lessons_text else ""
         retry_section = f"\n## Previous Attempt Feedback\n{retry_feedback}\n" if retry_feedback else ""
+        outer_section = self._outer_guidance(context)
         hyp_excerpt = hypotheses[:3000] if len(hypotheses) > 3000 else hypotheses
 
         # ── Phase 1: Triage ───────────────────────────────────────────────────
@@ -47,7 +48,7 @@ class EditPlanningStage(BaseStage):
 
 ## Article Analysis Summary
 {analysis[:1500] if len(analysis) > 1500 else analysis}
-{lessons_section}{retry_section}
+{lessons_section}{outer_section}{retry_section}
 ## Your Task: Triage
 Select 2-3 hypotheses to implement in this revision pass.
 

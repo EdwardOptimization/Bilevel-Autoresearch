@@ -69,6 +69,8 @@ class InnerRunner:
             RevisedOutputStage(model=model),
         ]
         self.evaluator = ArticleEvaluator(model=eval_model)
+        # Outer loop injects additional stage guidance here (persists across inner resets)
+        self.prompt_overrides: dict[str, str] = {}
 
     def run_once(self, inner_state: InnerLoopState) -> RunResult:
         """Execute one full pipeline pass. Updates inner_state and returns RunResult."""
@@ -84,6 +86,7 @@ class InnerRunner:
             "article_content": inner_state.article_working_copy,
             "previous_outputs": {},
             "retrieved_lessons": self._build_lessons_text(inner_state),
+            "outer_guidance": self.prompt_overrides,  # from outer loop, persists across resets
             "evaluator_feedback": "",
             "run_dir": run_dir,
             "run_number": run_num,

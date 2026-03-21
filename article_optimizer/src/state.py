@@ -217,6 +217,9 @@ class OuterLoopState:
         self.current_cycle: int = 0
         self._examples_dir = base_dir / "examples"
         self._examples_dir.mkdir(exist_ok=True)
+        # Prompt overrides: stage_name → additional guidance appended to stage prompts
+        # Updated by outer loop; persists across all inner cycles
+        self.prompt_overrides: dict[str, str] = {}
 
     # ── Extraction from completed inner cycle ─────────────────────────────────
 
