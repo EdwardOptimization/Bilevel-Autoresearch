@@ -112,9 +112,15 @@ class InnerRunner:
             ))
             logger.info(f"[Run {run_num}] Stage {stage.name}: {score_info.get('score', '?')}/10")
 
-        # Evaluate the final revised article
+        # Evaluate the final revised article (retry on fallback)
         revised_article = context["previous_outputs"].get("revised_output", inner_state.article_working_copy)
         eval_result = self.evaluator.evaluate(revised_article, inner_state.article_id)
+        if eval_result.get("summary") == "Evaluation parsing failed.":
+            logger.warning(f"[Run {run_num}] Evaluation fallback, retrying...")
+            eval_result = self.evaluator.evaluate(revised_article, inner_state.article_id)
+        if eval_result.get("summary") == "Evaluation parsing failed.":
+            logger.warning(f"[Run {run_num}] Evaluation fallback on retry 2, retrying...")
+            eval_result = self.evaluator.evaluate(revised_article, inner_state.article_id)
 
         # Map evaluator rubric dimensions to stage scores (E stage gets overall rubric score)
         overall = int(eval_result.get("overall", 5))
