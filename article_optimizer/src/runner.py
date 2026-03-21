@@ -182,12 +182,41 @@ class InnerRunner:
         return output, score_info, retried
 
     def _build_lessons_text(self, inner_state: InnerLoopState) -> str:
-        """Format inner skills for injection into stages."""
-        if not inner_state.inner_skills:
+        """
+        Format lessons for injection into stages.
+
+        Two-tier design:
+        - Promoted skills (confidence ≥ threshold): shown as verified rules
+        - Raw lessons (any confidence): always shown, labeled as tentative
+
+        This ensures injection happens every run regardless of confidence
+        calibration variance from the LLM.
+        """
+        has_skills = bool(inner_state.inner_skills)
+        has_lessons = bool(inner_state.inner_lessons)
+        if not has_skills and not has_lessons:
             return ""
+
         lines = ["## Lessons from Previous Runs (this cycle)"]
-        for stage_name, skill_text in inner_state.inner_skills.items():
-            lines.append(f"\n### {stage_name}\n{skill_text}")
+
+        # Tier 1: promoted skills (high-confidence, stage-grouped)
+        if has_skills:
+            lines.append("\n### Verified Rules (high confidence)")
+            for stage_name, skill_text in inner_state.inner_skills.items():
+                lines.append(f"\n#### {stage_name}\n{skill_text}")
+
+        # Tier 2: all raw lessons sorted by confidence desc
+        if has_lessons:
+            lines.append("\n### Observations from Recent Runs")
+            sorted_lessons = sorted(inner_state.inner_lessons, key=lambda l: -l.confidence)
+            for lesson in sorted_lessons[-8:]:  # cap at 8 to avoid context bloat
+                tag = "✓" if lesson.confidence >= 0.85 else "~"
+                lines.append(
+                    f"\n[{tag} conf={lesson.confidence:.2f} | {lesson.stage}] "
+                    f"{lesson.summary}\n"
+                    f"→ Rule: {lesson.reuse_rule}"
+                )
+
         return "\n".join(lines)
 
     def _extract_lessons(
