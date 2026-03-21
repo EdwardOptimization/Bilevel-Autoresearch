@@ -205,14 +205,19 @@ class InnerRunner:
             for stage_name, skill_text in inner_state.inner_skills.items():
                 lines.append(f"\n#### {stage_name}\n{skill_text}")
 
-        # Tier 2: all raw lessons sorted by confidence desc
+        # Tier 2: all raw lessons sorted by confidence desc, most recent runs first
         if has_lessons:
             lines.append("\n### Observations from Recent Runs")
-            sorted_lessons = sorted(inner_state.inner_lessons, key=lambda l: -l.confidence)
-            for lesson in sorted_lessons[-8:]:  # cap at 8 to avoid context bloat
+            # Sort by (run_number desc, confidence desc) so recent runs take precedence
+            sorted_lessons = sorted(
+                inner_state.inner_lessons,
+                key=lambda l: (l.run_number, l.confidence),
+                reverse=True,
+            )
+            for lesson in sorted_lessons[:8]:  # top 8 by recency + confidence
                 tag = "✓" if lesson.confidence >= 0.85 else "~"
                 lines.append(
-                    f"\n[{tag} conf={lesson.confidence:.2f} | {lesson.stage}] "
+                    f"\n[{tag} run={lesson.run_number} conf={lesson.confidence:.2f} | {lesson.stage}] "
                     f"{lesson.summary}\n"
                     f"→ Rule: {lesson.reuse_rule}"
                 )
