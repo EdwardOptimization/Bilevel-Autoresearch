@@ -1,7 +1,13 @@
 # Article Optimizer Configuration
 
+# Inner loop model (content generation)
 provider: minimax
 model: MiniMax-M2.7-highspeed
+
+# Outer loop model (meta-analysis, process optimization)
+# Tested 5 rounds each: DeepSeek 5/5 pass, GLM5 2/5 pass (40% failure rate)
+outer_loop_provider: deepseek
+outer_loop_model: deepseek-chat
 
 # Inner loop settings
 inner_loop:
