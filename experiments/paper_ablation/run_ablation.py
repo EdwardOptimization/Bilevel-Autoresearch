@@ -610,6 +610,18 @@ def _load_runner_module(runner_py: Path):
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
 
+    # Fix relative imports for dynamically loaded runner copies
+    code = runner_py.read_text(encoding="utf-8")
+    if "from .config import" in code or "from .outer import" in code:
+        code = code.replace("from .config import", "from domains.train_opt.config import")
+        code = code.replace("from .outer import", "from domains.train_opt.outer import")
+        runner_py.write_text(code, encoding="utf-8")
+        # Recreate spec after modifying file
+        spec = importlib.util.spec_from_file_location(
+            f"_ablation_runner_{runner_py.stat().st_mtime_ns}", runner_py
+        )
+        module = importlib.util.module_from_spec(spec)
+
     spec.loader.exec_module(module)
     return module
 
