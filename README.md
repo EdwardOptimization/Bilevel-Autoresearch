@@ -1,6 +1,6 @@
 # Bilevel Autoresearch
 
-**A dual-layer self-improving article optimizer. The inner loop improves articles. The outer loop improves how the inner loop does it.**
+**A general framework for self-improving research pipelines. The inner loop runs any iterative task. The outer loop optimizes how the inner loop runs.**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![CI](https://github.com/EdwardOptimization/Bilevel-Autoresearch/actions/workflows/ci.yml/badge.svg)](https://github.com/EdwardOptimization/Bilevel-Autoresearch/actions)
@@ -12,18 +12,19 @@
 
 ## What is this?
 
-Most AI pipelines run once and stop. EvoResearch runs repeatedly, learning from each run. **Bilevel Autoresearch** takes this one step further: when the pipeline itself becomes the subject of optimization, a two-level structure emerges.
+Most AI pipelines run once and stop. Autoresearch runs repeatedly, learning from each run — but it still treats the pipeline configuration as fixed. **Bilevel Autoresearch** adds a second loop: when the pipeline *itself* becomes the subject of optimization, a two-level structure emerges.
 
 ```
-Inner loop: Article → 5-Stage Pipeline → Evaluator → Lessons → Better Article
-                                  ↑ improved prompts / config
-Outer loop: Trace Analysis → DeepSeek Meta-Optimizer → Pipeline Config Updates
+Inner loop: Task Input → Pipeline (any domain) → Evaluator → Lessons → Better Output
+                                       ↑ improved prompts / config / mechanisms
+Outer loop: Trace Analysis → Meta-Optimizer → Pipeline Config Updates
 ```
 
-- **Inner loop** (MiniMax): edits one article, accumulates lessons, improves quality
-- **Outer loop** (DeepSeek): analyzes the inner loop's trace, updates pipeline config, improves *how* the inner loop runs
+The framework is domain-agnostic. The **inner loop** can be anything with a measurable objective: article editing, code optimization, experimental design, hypothesis generation. The **outer loop** analyzes how the inner loop is performing and updates the pipeline's search mechanism — prompt design, token budgets, strategy selection, stage configuration.
 
-This maps directly to **Bilevel Optimization**: upper level minimizes pipeline config loss, lower level (approximately) minimizes article quality loss under that config.
+This repo includes a **concrete demo**: optimizing a series of research articles against a 5-dimension academic rubric. The demo is what the `articles/`, `src/pipeline/`, and experiment results are about. But the architecture (`src/inner_loop.py`, `src/outer_loop.py`, `src/runner.py`) is the general framework.
+
+This maps directly to **Bilevel Optimization**: upper level minimizes pipeline config loss, lower level (approximately) minimizes task-specific quality loss under that config. Because the inner problem is solved by an LLM — not to global optimality — this is an instance of *approximate bilevel optimization with LLM solvers*, distinct from classical bilevel theory.
 
 ---
 
