@@ -1,5 +1,5 @@
 """Unit tests for state classes."""
-from src.state import InnerLesson, InnerLoopState, RunResult, StageScore
+from core.state import InnerLesson, InnerLoopState, RunResult, StageScore
 
 
 class TestRunResult:

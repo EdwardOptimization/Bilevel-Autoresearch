@@ -1,7 +1,7 @@
 """Unit tests for the LLM client module."""
 import pytest
 
-from src.llm_client import (
+from core.llm_client import (
     PROVIDERS,
     _strip_thinking_tags,
     configure,

@@ -30,7 +30,7 @@ if _env_path.exists():
             _v = _v.strip().strip('"').strip("'")
             os.environ.setdefault(_k.strip(), _v)
 
-from src.llm_client import LLMClient
+from core.llm_client import LLMClient
 
 from .config import SearchConfig
 from .outer import TrainOuterLoop
@@ -52,7 +52,7 @@ AUTORESEARCH_DIR = Path(os.environ.get(
 
 def get_llm_client(provider: str = "deepseek", model: str = "") -> LLMClient:
     """Create LLM client from environment."""
-    from src.llm_client import PROVIDERS
+    from core.llm_client import PROVIDERS
     pinfo = PROVIDERS.get(provider)
     if not pinfo:
         sys.exit(f"ERROR: Unknown provider '{provider}'")

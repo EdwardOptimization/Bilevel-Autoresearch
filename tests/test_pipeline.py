@@ -1,10 +1,10 @@
 """Unit tests for pipeline base and stage attributes."""
-from src.pipeline.article_analysis import ArticleAnalysisStage
-from src.pipeline.base import BaseStage
-from src.pipeline.edit_planning import EditPlanningStage
-from src.pipeline.impact_assessment import ImpactAssessmentStage
-from src.pipeline.improvement_hypotheses import ImprovementHypothesesStage
-from src.pipeline.revised_output import RevisedOutputStage
+from core.pipeline.article_analysis import ArticleAnalysisStage
+from core.pipeline.base import BaseStage
+from core.pipeline.edit_planning import EditPlanningStage
+from core.pipeline.impact_assessment import ImpactAssessmentStage
+from core.pipeline.improvement_hypotheses import ImprovementHypothesesStage
+from core.pipeline.revised_output import RevisedOutputStage
 
 
 class TestBaseStage:

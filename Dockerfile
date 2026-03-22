@@ -5,7 +5,7 @@ WORKDIR /app
 COPY pyproject.toml ./
 RUN pip install --no-cache-dir -e .
 
-COPY src/ ./src/
+COPY core/ ./core/
 COPY cli.py ./
 COPY articles/ ./articles/
 COPY domains/ ./domains/

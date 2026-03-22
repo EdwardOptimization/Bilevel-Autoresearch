@@ -37,9 +37,9 @@ Before contributing, understand these design invariants:
 
 ## Adding a New Pipeline Stage
 
-1. Create `src/pipeline/your_stage.py` extending `BaseStage`
+1. Create `core/pipeline/your_stage.py` extending `BaseStage`
 2. Add `name = "your_stage"` class attribute
-3. Register in `src/runner.py` — add to `self.stages` list in `InnerRunner.__init__`
+3. Register in `core/runner.py` — add to `self.stages` list in `InnerRunner.__init__`
 4. Decide if this stage receives lesson injection (add to relevant stages if yes)
 5. Write tests if the stage has non-trivial logic
 
@@ -65,7 +65,7 @@ python cli.py mechresearch --article article2
 
 ## Adding a New LLM Provider
 
-Edit `src/llm_client.py` — add an entry to `PROVIDERS`:
+Edit `core/llm_client.py` — add an entry to `PROVIDERS`:
 
 ```python
 "yourprovider": {
@@ -81,15 +81,15 @@ All OpenAI-compatible providers work with `native_sdk: False`.
 ## Code Style
 
 ```bash
-ruff check src/ tests/    # lint
-ruff format src/ tests/   # format
+ruff check core/ tests/    # lint
+ruff format core/ tests/   # format
 ```
 
 ## Pull Request Guidelines
 
 - Keep PRs focused — one concern per PR
 - Tests must pass: `python -m pytest tests/ -v`
-- Lint must pass: `ruff check src/ tests/`
+- Lint must pass: `ruff check core/ tests/`
 - Do not commit `artifacts/` or `memory/` directories
 
 ## Reporting Issues

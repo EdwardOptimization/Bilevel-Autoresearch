@@ -21,7 +21,7 @@ dev = ["pytest>=8.0", "ruff>=0.3.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*"]
+include = ["core*"]
 
 [tool.ruff]
 [tool.ruff.lint]

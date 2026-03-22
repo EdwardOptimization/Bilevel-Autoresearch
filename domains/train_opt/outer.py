@@ -9,7 +9,7 @@ import json
 import logging
 from pathlib import Path
 
-from src.llm_client import LLMClient, parse_json_response
+from core.llm_client import LLMClient, parse_json_response
 
 from .config import SearchConfig
 from .runner import TrainRunner, TrainTrace

@@ -135,8 +135,8 @@ Implement this as a Python class. The file will be saved and dynamically importe
 
 ```python
 # Available imports (use exactly these paths):
-from src.pipeline.base import BaseStage
-from src.llm_client import call_llm, parse_json_response
+from core.pipeline.base import BaseStage
+from core.llm_client import call_llm, parse_json_response
 
 # Your class must:
 class YourStage(BaseStage):

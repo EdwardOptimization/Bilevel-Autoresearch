@@ -28,11 +28,11 @@ if _env_path.exists():
             v = v.strip().strip('"').strip("'")
             os.environ.setdefault(k.strip(), v)
 
-from src.llm_client import configure
-from src.inner_loop import InnerLoopController
-from src.outer_loop import OuterAnalyzer, OuterLoopController
-from src.runner import InnerRunner
-from src.state import OuterLoopState, InnerLoopState
+from core.llm_client import configure
+from core.inner_loop import InnerLoopController
+from core.outer_loop import OuterAnalyzer, OuterLoopController
+from core.runner import InnerRunner
+from core.state import OuterLoopState, InnerLoopState
 
 logging.basicConfig(
     level=logging.INFO,
@@ -67,7 +67,7 @@ def load_articles(ids: list[str]) -> dict[str, str]:
 
 
 def make_runner(provider: str = "minimax", model: str = "") -> InnerRunner:
-    from src.llm_client import PROVIDERS
+    from core.llm_client import PROVIDERS
     pinfo = PROVIDERS.get(provider)
     if not pinfo:
         sys.exit(f"ERROR: Unknown provider '{provider}'. Choose from: {list(PROVIDERS)}")
@@ -83,7 +83,7 @@ def make_runner(provider: str = "minimax", model: str = "") -> InnerRunner:
 
 def cmd_run(args):
     """Full dual-layer experiment."""
-    from src.llm_client import PROVIDERS
+    from core.llm_client import PROVIDERS
     inner_provider = args.provider or "minimax"
     inner_model = args.model or ""
     outer_provider = args.outer_provider or "deepseek"
@@ -177,8 +177,8 @@ def cmd_inner(args):
 
 def cmd_mechresearch(args):
     """Level 2 mechanism research — outer LLM generates a new pipeline stage."""
-    from src.llm_client import PROVIDERS
-    from src.mechanism_research import MechanismResearcher
+    from core.llm_client import PROVIDERS
+    from core.mechanism_research import MechanismResearcher
 
     inner_provider = args.provider or "minimax"
     inner_model = args.model or ""

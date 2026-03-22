@@ -5,6 +5,7 @@ config/local.yaml
 # Runtime artifacts (don't commit research runs)
 artifacts/
 memory/
+skills/
 
 # Python
 __pycache__/

@@ -1,306 +1,118 @@
 # Bilevel Autoresearch
 
-**A general framework for self-improving research pipelines. The inner loop runs any iterative task. The outer loop optimizes how the inner loop runs.**
+**Autoresearch that researches itself.** An outer loop autonomously discovers new mechanisms for the inner loop — not by tuning prompts, but by inventing and code-generating structural changes to the search process.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![CI](https://github.com/EdwardOptimization/Bilevel-Autoresearch/actions/workflows/ci.yml/badge.svg)](https://github.com/EdwardOptimization/Bilevel-Autoresearch/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Providers](https://img.shields.io/badge/LLM-DeepSeek%20%7C%20MiniMax%20%7C%20OpenAI%20%7C%20Anthropic%20%7C%20GLM-purple.svg)](#providers)
 [![Tests](https://img.shields.io/badge/tests-44%20passing-brightgreen.svg)](tests/)
 
 ---
 
-## What is this?
-
-Most AI pipelines run once and stop. Autoresearch runs repeatedly, learning from each run — but it still treats the pipeline configuration as fixed. **Bilevel Autoresearch** adds a second loop: when the pipeline *itself* becomes the subject of optimization, a two-level structure emerges.
+## Core Idea
 
 ```
-Inner loop: Task Input → Pipeline (any domain) → Evaluator → Lessons → Better Output
-                                       ↑ improved prompts / config / mechanisms
-Outer loop: Trace Analysis → Meta-Optimizer → Pipeline Config Updates
+Level 1:    Inner loop optimizes the task      (propose → execute → evaluate → keep/discard)
+Level 1.5:  Outer loop adjusts inner config    (freeze params, shift strategy, inject guidance)
+Level 2:    Agent modifies inner loop CODE      (invent new mechanisms, change loop structure)
 ```
 
-The framework is domain-agnostic. The **inner loop** can be anything with a measurable objective: article editing, code optimization, experimental design, hypothesis generation. The **outer loop** analyzes how the inner loop is performing and updates the pipeline's search mechanism — prompt design, token budgets, strategy selection, stage configuration.
+Each level uses the same pattern: **propose × evaluate × iterate**. The difference is what gets optimized — task output, search configuration, or search mechanism itself.
 
-This repo includes a **concrete demo**: optimizing a series of research articles against a 5-dimension academic rubric. The demo is what the `articles/`, `src/pipeline/`, and experiment results are about. But the architecture (`src/inner_loop.py`, `src/outer_loop.py`, `src/runner.py`) is the general framework.
+## Key Result
 
-This maps directly to **Bilevel Optimization**: upper level minimizes pipeline config loss, lower level (approximately) minimizes task-specific quality loss under that config. Because the inner problem is solved by an LLM — not to global optimality — this is an instance of *approximate bilevel optimization with LLM solvers*, distinct from classical bilevel theory.
+A Level 2 agent ran autonomously for 7 rounds on Karpathy's GPT pretraining benchmark. It invented **12 mechanisms** without human specification:
 
----
-
-## Evolution Trace
-
-**Single-layer experiment** — inner loop only, manual outer optimization (17 loops):
-
-```
-Run 1:  A:7 B:7 C:6 D:5 E:5 → 6/10  (0 lessons)
-Run 4:  A:7 B:7 C:7 D:7 E:7 → 7/10  (skills v2 promoted)
-Run 9:  A:8 B:8 C:6 D:8 E:9 → 7/10  (token budget fix for MiniMax reasoning overhead)
-Run 13: A:8 B:9 C:8 D:8 E:9 → 8/10 🎯 (122 lessons, 6 skills)
-Run 15: A:9 B:8 C:8 D:8 E:8 → 8/10 🎯 (2nd topic: CoT reasoning)
-Run 16: A:9 B:9 C:8 D:8 E:8 → 9/10 🎯 (3rd topic: in-context learning)
-```
-
-*A–E are rubric dimensions: Argumentative Rigor / Conceptual Clarity / Cross-Article Consistency / Insight Novelty / Actionability*
-
-**Dual-layer experiment** — outer loop automated (4 cycles × 5 runs):
+| Mechanism | Inspired By | What It Changed |
+|-----------|------------|-----------------|
+| ElitePool + Crossover | Evolutionary algorithms | Proposal generation: LLM + population-based interpolation |
+| Simulated Annealing | Statistical mechanics | Keep/discard: probabilistic acceptance of regressions |
+| Plateau Detector | Signal processing | Loop behavior: force diversification when stuck |
+| Momentum Tracker | Gradient optimization | Proposal context: directional signals from history |
+| Crash Memory | Software engineering | Proposal context: warn about crash-causing params |
+| Freeze Limit | Control theory | Outer loop: prevent over-constraining the search space |
 
 ```
-Cycle 1: 7.2, 6.6, 6.6, 6.4, 6.4  (baseline, no outer intervention yet)
-Cycle 2: 6.6, 7.0, 7.0, 7.0, 7.0  ← outer Reflexion injection → C dimension locked at 8/10
-Cycle 3: 6.4, 6.2, 6.2, 7.0, 6.2  (outer searching for better strategy)
-Cycle 4: 6.4, 6.4, 7.0, 6.8, 6.6
+val_bpb: 1.393 → 1.219    Search efficiency: 36% → 91%    Crash rate: 27% → 0%
 ```
 
-Cycle 2 stability (4/5 runs at 7.0 vs. declining in Cycle 1) is direct evidence of the outer loop working.
-
-**Level 2 mechanism research** — outer LLM generates new pipeline stages:
-
-```
-Baseline:   [6, 6, 7, 7, 6]  peak = 6
-With stage: [6, 6, 6, 7, 6]  peak = 7  (+1)
-```
-
-DeepSeek autonomously generated a `SubskillFeedbackLoopStage` (drawing from Behavioral Psychology / Curriculum Learning), code on first attempt, dynamically loaded via `importlib`.
-
-**Training domain** — GPT pretraining on RTX 5080 (Level 2 agent, 7 rounds):
-
-```
-Baseline:   val_bpb = 1.393  (50M model, 2-min training budget)
-Round 2:    val_bpb = 1.226  (Level 2 fixed quick-test, added momentum tracking)
-Round 7:    val_bpb = 1.219  (13M model, 10/11 keeps, 91% search efficiency)
-```
-
-Level 2 agent autonomously invented 12 mechanisms including ElitePool+Crossover,
-SimulatedAnnealing, PlateauDetector, and StepSizeCalibrator.
-Full report: `experiments/train_opt_20260322/REPORT.md`
+Full report: [`experiments/train_opt_20260322/REPORT.md`](experiments/train_opt_20260322/REPORT.md)
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Install
 pip install -e .
 
-# 2. Set API keys
-export MINIMAX_API_KEY="sk-..."     # inner loop (article editing)
-export DEEPSEEK_API_KEY="sk-..."    # outer loop (meta-optimization)
+# Article optimization demo (needs MINIMAX_API_KEY + DEEPSEEK_API_KEY)
+python cli.py once --article article1                    # smoke test
+python cli.py run --articles article1 --max-inner 5 --max-outer 4   # full bilevel
 
-# 3. Smoke test — one pass on article1
-python cli.py once --article article1
-
-# 4. Inner loop only — 5 runs, no outer optimization
-python cli.py inner --article article1 --max-inner 5
-
-# 5. Full dual-layer experiment
-python cli.py run --articles article1 --max-inner 5 --max-outer 4
-
-# 6. Run all three articles
-python cli.py run --max-inner 5 --max-outer 4
-
-# 7. Level 2 mechanism research — outer LLM generates new pipeline stages
-python cli.py mechresearch --article article2 --baseline-cycles 2 --max-inner 5
-
-# 8. Training domain — bilevel optimization on GPT pretraining (requires GPU + Karpathy's autoresearch)
+# Training optimization demo (needs GPU + DEEPSEEK_API_KEY + Karpathy's autoresearch)
 python -m domains.train_opt.cli --provider deepseek bilevel --inner-budget 5 --outer-cycles 2
 
-# 9. Training domain — inner loop only
-python -m domains.train_opt.cli --provider deepseek inner --iterations 10
+# Use any LLM provider
+python cli.py --provider openai --outer-provider openai run --max-inner 5
 ```
 
----
-
-## Pipeline Stages
-
-Each inner loop run passes the article through 5 stages:
-
-| Stage | Role | Lesson Injection |
-|-------|------|-----------------|
-| **A: Article Analysis** | Identify weaknesses per rubric dimension | Skills only (bias-free) |
-| **B: Improvement Hypotheses** | Generate H1–H4 concrete fixes | ✅ lessons + skills |
-| **C: Edit Planning** | Triage hypotheses → ranked edit plan | ✅ lessons + skills |
-| **D: Impact Assessment** | Predict post-edit rubric scores, flag regressions | Skills only |
-| **E: Revised Output** | Apply edits, produce new article | ✅ lessons + skills |
-
-After each run:
-- **Evaluator** scores the revised article on 5 rubric dimensions (A–E) — *never reads memory*
-- **Lesson Extractor** pulls 2–4 structured lessons from the run
-- Lessons with confidence ≥ 0.85 are promoted to **skills** (verified rules, shown as Tier 1 in next run)
-
----
-
-## Rubric Dimensions
-
-| Dim | Name | Target |
-|-----|------|--------|
-| A | Argumentative Rigor — every claim has a support chain | ≥8 |
-| B | Conceptual Clarity — key terms defined, no ambiguity | ≥8 |
-| C | Cross-Article Consistency — no contradictions with companion articles | ≥8 |
-| D | Insight Novelty — non-obvious, explicitly stated | ≥7 |
-| E | Actionability — clear implication for practice or future work | ≥7 |
-
----
-
-## Outer Loop
-
-The outer loop (DeepSeek) analyzes the inner cycle trace after each outer iteration and produces:
-
-```json
-{
-  "root_cause": "...",
-  "strategy": "reflexion | opro | promptbreeder",
-  "prompt_overrides": {
-    "article_analysis": "Pay special attention to cross-article consistency..."
-  },
-  "outer_lessons": [...]
-}
-```
-
-Prompt overrides are injected into the inner pipeline's stages at the start of the next cycle. The inner loop never knows about the outer loop — it just sees better prompts.
+See [`.env.example`](.env.example) for required API keys.
 
 ---
 
 ## Architecture
 
 ```
-cli.py                            # Entry point: once / inner / run / mechresearch
-articles/                         # Baseline article files (ground truth)
-│   ├── article1_llm_research_depth.md
-│   ├── article15_meta_optimization.md
-│   ├── article2_agent_team_scale.md
-│   └── zh/                       # Chinese originals (archived)
-src/
-├── llm_client.py                 # Multi-provider client (LLMClient + module-level API)
-├── runner.py                     # InnerRunner: one full A→B→C→D→E pass + inject_stage()
-├── inner_loop.py                 # InnerLoopController: runs until convergence
+cli.py                            # Entry point (article domain)
+core/                             # Bilevel framework
+├── runner.py                     # InnerRunner + inject_stage()
+├── inner_loop.py                 # InnerLoopController
 ├── outer_loop.py                 # OuterAnalyzer + OuterLoopController
-├── state.py                      # InnerLoopState / OuterLoopState / RunResult
-├── mechanism_research.py         # Level 2: outer LLM researches new mechanisms via code gen
-├── pipeline/
-│   ├── base.py                   # BaseStage
-│   ├── article_analysis.py       # Stage A
-│   ├── improvement_hypotheses.py # Stage B
-│   ├── edit_planning.py          # Stage C
-│   ├── impact_assessment.py      # Stage D
-│   ├── revised_output.py         # Stage E
-│   └── generated/                # Dynamically generated stages (Level 2)
-└── evaluator/
-    └── article_evaluator.py      # Rubric scoring — never reads memory
+├── mechanism_research.py         # Level 2: generate new pipeline stages as code
+├── state.py                      # State management with isolation boundaries
+├── llm_client.py                 # Multi-provider LLM client
+├── pipeline/                     # Article demo: 5 stages (A→E)
+└── evaluator/                    # Rubric scoring (isolated from lessons)
 domains/
-└── train_opt/                    # Training optimization domain (GPT pretraining)
-    ├── cli.py                    # Entry point: inner / bilevel
-    ├── runner.py                 # Inner loop: propose → train → evaluate → keep/discard
-    ├── outer.py                  # Outer loop: analyze trace → modify search config
+└── train_opt/                    # Training demo: GPT pretraining optimization
+    ├── runner.py                 # Inner loop with 12 agent-invented mechanisms
+    ├── outer.py                  # Outer loop: trace analysis → config updates
     └── config.py                 # SearchConfig (outer loop's control surface)
+articles/                         # Article demo input data
 experiments/                      # Timestamped experiment records
+tests/                            # 44 unit tests
 ```
 
 ---
 
-## Artifact Structure
+## How It Works
 
-```
-artifacts/
-└── cycle_01/
-    ├── run_001/
-    │   ├── evaluation.json          ← rubric scores A-E + overall
-    │   └── stages/
-    │       ├── article_analysis/analysis.md
-    │       ├── improvement_hypotheses/hypotheses.md
-    │       ├── edit_planning/edit_plan.md
-    │       ├── impact_assessment/impact_assessment.md
-    │       └── revised_output/revised_article.md
-    ├── run_002/ ...
-    └── run_005/
-└── cycle_02/ ...
-└── mechanism_research/            ← Level 2 research sessions
-    └── session_YYYYMMDD_HHMMSS/
-        ├── 01_exploration.md
-        ├── 02_critique.md
-        ├── 03_spec.md
-        ├── 04_code_attempt_1.py
-        ├── 05_final_stage.py
-        ├── 06_summary.json
-        └── 07_validation.json
-```
+The **inner loop** runs a task repeatedly, learning from each run. The **outer loop** analyzes the inner loop's trace and modifies its configuration. **Level 2** goes further — an autonomous agent reads the inner loop's code, identifies bottlenecks, and writes new Python code to fix them.
 
----
+Two demo domains are included:
 
-## Providers
+**Article optimization** — 5-stage pipeline (Analysis → Hypotheses → Planning → Assessment → Revision) evaluated against a rubric. Outer loop injects prompt overrides. Level 2 generates new pipeline stages via `importlib`.
 
-| Provider | Env Var | Role in System |
-|----------|---------|----------------|
-| `minimax` | `MINIMAX_API_KEY` | Inner loop (article editing) — reasoning model, allocate ~3000 extra tokens for think blocks |
-| `deepseek` | `DEEPSEEK_API_KEY` | Outer loop (meta-optimization) — fast, reliable JSON output |
-| `openai` | `OPENAI_API_KEY` | Either loop |
-| `anthropic` | `ANTHROPIC_API_KEY` | Either loop (requires `pip install anthropic`) |
-| `glm` | `GLM_API_KEY` | Either loop |
-
----
-
-## The Theory
-
-This system is the implementation described in the article series in `articles/`:
-
-- **Article 1** (`article1_llm_research_depth.md`): Single-loop autoresearch — proposal × feedback × iteration
-- **Article 1.5** (`article15_meta_optimization.md`): **Bilevel Autoresearch** — when the pipeline itself becomes the research target
-- **Article 2** (`article2_agent_team_scale.md`): Multi-pipeline scaling for large research tasks
-
-The key formalization from Article 1.5:
-
-```
-Upper level (outer loop):   min  F(P) = -E[Q | P]      over pipeline config P
-Lower level (inner loop):   min  f(Q | P, X)            over article quality Q
-```
-
-The inner problem is solved **approximately** by LLM — not to global optimality. This makes it an instance of *approximate bilevel optimization with LLM solvers*, distinct from classical bilevel theory which assumes exact inner solutions.
-
-The config space P is mixed-integer: discrete (strategy selection, two-phase generation on/off) + continuous (token budgets, truncation thresholds). The objective is highly nonlinear — a token budget change from 4096 to 5500 can cause a non-smooth quality jump by unlocking full reasoning output.
-
----
-
-## Key Design Decisions
-
-**Evaluator isolation**: The evaluator never reads lesson memory. Lessons only influence proposals, never judgments. Without this, outer loop feedback degrades as the evaluator starts echoing what it "knows" should be good.
-
-**Two-tier lesson injection**: Raw lessons (any confidence) always injected as Tier 2. Promoted skills (≥0.85 confidence) shown as Tier 1 "Verified Rules". This prevents the empty-injection failure mode when the LLM returns low confidence scores.
-
-**Instance-scoped LLMClient for outer loop**: The outer loop uses `LLMClient("deepseek", ...)` instead of the module-level `configure()`. This prevents the DeepSeek config from clobbering the MiniMax config that inner loop stages depend on — a subtle global-state race condition in a concurrent two-model system.
+**Training optimization** — LLM proposes hyperparameter changes to Karpathy's `train.py`, trains for 2 minutes, measures `val_bpb`. Outer loop freezes ineffective params and shifts strategy. Level 2 agent invented CrashMemory, MultiCandidate, ElitePool+Crossover, SimulatedAnnealing, PlateauDetector, and more.
 
 ---
 
 ## Related Work
 
-This project builds on and is inspired by three lines of work:
+| Project | Contribution | Link |
+|---------|-------------|------|
+| **AutoResearch** (Karpathy) | The single-track autoresearch loop | [GitHub](https://github.com/karpathy/autoresearch) |
+| **AutoResearchClaw** (AIMing Lab) | Multi-batch parallel search | [GitHub](https://github.com/aiming-lab/AutoResearchClaw) |
+| **EvoScientist** | Persistent experience memory | [GitHub](https://github.com/EvoScientist/EvoScientist) |
 
-| Project | What it contributes | Link |
-|---------|-------------------|------|
-| **AutoResearch** (Karpathy, 2026) | Established the single-track iterative autoresearch pattern: compress the problem, propose, evaluate, keep/discard | [GitHub](https://github.com/karpathy/autoresearch) |
-| **AutoResearchClaw** (AIMing Lab) | Extended autoresearch with end-to-end pipeline + multi-batch parallel search to escape local optima | [GitHub](https://github.com/aiming-lab/AutoResearchClaw) |
-| **EvoScientist** | Added persistent experience memory — failures and lessons are stored and fed back into future proposals | [GitHub](https://github.com/EvoScientist/EvoScientist) |
-
-The key observation driving this project: each of the above represents a **human-designed mechanism change** to the base autoresearch loop. Bilevel Autoresearch asks whether an outer optimization loop can discover such mechanism improvements autonomously — without them being pre-programmed as fixed options.
+Each of the above is a **human-designed** mechanism change. This project asks: can an outer loop discover such improvements **autonomously**?
 
 ---
 
-## Roadmap
+## Extending
 
-- [x] Training optimization domain (GPT pretraining benchmark)
-- [x] Level 2 mechanism research with code generation
-- [x] --provider/--model CLI flags for any LLM provider
-- [ ] Outer loop strategy diversity (beyond Reflexion — try PromptBreeder, OPRO on separate cycles)
-- [ ] Embedding-based lesson retrieval (vs. keyword)
-- [ ] Multi-article parallel inner loops with shared outer signal
-- [ ] Real literature search integration (Semantic Scholar / arXiv)
-- [ ] Code execution sandbox for real experiments
-
----
+Add a new domain in `domains/your_domain/` — see [`domains/README.md`](domains/README.md) and `train_opt/` as a template. You need: a runner (inner loop), an outer loop, a config, and a measurable metric.
 
 ## License
 
 MIT — see [LICENSE](LICENSE)
-
----
-
-*Built on the principle that a system which optimizes its own optimization process is strictly more powerful than one that doesn't.*

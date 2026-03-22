@@ -94,7 +94,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from src.llm_client import LLMClient
+from core.llm_client import LLMClient
 
 from .config import HYPERPARAM_NAMES, SearchConfig
 
@@ -1174,7 +1174,7 @@ class TrainRunner:
 
         Falls back to single-proposal mode if multi-candidate parsing fails.
         """
-        from src.llm_client import parse_json_response
+        from core.llm_client import parse_json_response
 
         self._proposal_count += 1
 
