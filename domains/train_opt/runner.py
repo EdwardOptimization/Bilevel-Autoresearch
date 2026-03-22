@@ -87,9 +87,7 @@ import logging
 import math
 import random
 import re
-import shutil
 import subprocess
-import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -853,12 +851,14 @@ class TrainRunner:
         llm_client: LLMClient,
         search_config: SearchConfig | None = None,
         artifacts_dir: Path | None = None,
+        simple_mode: bool = False,
     ):
         self.train_py = Path(train_py)
         self.work_dir = Path(work_dir)
         self.client = llm_client
         self.search_config = search_config or SearchConfig()
         self.artifacts_dir = artifacts_dir or (self.work_dir / "artifacts" / "train_opt")
+        self.simple_mode = simple_mode
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
 
         # Read the original train.py
@@ -932,61 +932,63 @@ class TrainRunner:
         (iter_dir / "train.py").write_text(new_code, encoding="utf-8")
 
         # 3. Quick-test pre-filter (Improvement 3, fixed in Improvement 4)
-        logger.info(f"[Iter {iteration}] Running quick test (15s)... (changes: {proposal['changes']})")
-        quick_result = self._run_training(
-            modified_path, iter_dir, quick_test=True
-        )
+        # Skipped in simple_mode — go directly to full training
+        if not self.simple_mode:
+            logger.info(f"[Iter {iteration}] Running quick test (15s)... (changes: {proposal['changes']})")
+            quick_result = self._run_training(
+                modified_path, iter_dir, quick_test=True
+            )
 
-        if quick_result is None:
-            # Quick test crashed — check if it's an infrastructure error
-            quicktest_err_path = iter_dir / "quicktest_error.txt"
-            if quicktest_err_path.exists():
-                err_text = quicktest_err_path.read_text(encoding="utf-8")
-                if _is_infrastructure_error(err_text):
-                    # Infrastructure error: skip quick test, go straight to full run
-                    logger.warning(
-                        f"[Iter {iteration}] Quick test had INFRASTRUCTURE error "
-                        f"(not a training crash) — skipping quick test, trying full run"
-                    )
+            if quick_result is None:
+                # Quick test crashed — check if it's an infrastructure error
+                quicktest_err_path = iter_dir / "quicktest_error.txt"
+                if quicktest_err_path.exists():
+                    err_text = quicktest_err_path.read_text(encoding="utf-8")
+                    if _is_infrastructure_error(err_text):
+                        # Infrastructure error: skip quick test, go straight to full run
+                        logger.warning(
+                            f"[Iter {iteration}] Quick test had INFRASTRUCTURE error "
+                            f"(not a training crash) — skipping quick test, trying full run"
+                        )
+                    else:
+                        # Real training crash
+                        logger.warning(f"[Iter {iteration}] Quick test CRASHED — skipping full run")
+                        self.crash_memory.record(
+                            proposal["changes"], iteration, error_hint="crashed in 15s smoke test"
+                        )
+                        r = TrainResult(
+                            iteration=iteration, val_bpb=0, peak_vram_mb=0,
+                            training_seconds=0, num_params_m=0, status="crash",
+                            changes=proposal["changes"],
+                            description=f"CRASH (quick test): {proposal.get('hypothesis', '')}",
+                        )
+                        self.trace.add(r)
+                        return r
                 else:
-                    # Real training crash
-                    logger.warning(f"[Iter {iteration}] Quick test CRASHED — skipping full run")
-                    self.crash_memory.record(
-                        proposal["changes"], iteration, error_hint="crashed in 15s smoke test"
+                    # No error file — could be timeout or other issue, skip quick test
+                    logger.warning(
+                        f"[Iter {iteration}] Quick test failed without error file — "
+                        f"skipping quick test, trying full run"
                     )
-                    r = TrainResult(
-                        iteration=iteration, val_bpb=0, peak_vram_mb=0,
-                        training_seconds=0, num_params_m=0, status="crash",
-                        changes=proposal["changes"],
-                        description=f"CRASH (quick test): {proposal.get('hypothesis', '')}",
-                    )
-                    self.trace.add(r)
-                    return r
-            else:
-                # No error file — could be timeout or other issue, skip quick test
+            elif quick_result.get("quick_test_diverged"):
+                # Loss was abnormally high — skip full run
                 logger.warning(
-                    f"[Iter {iteration}] Quick test failed without error file — "
-                    f"skipping quick test, trying full run"
+                    f"[Iter {iteration}] Quick test DIVERGING (loss={quick_result.get('val_bpb', '?')}) "
+                    f"— skipping full run"
                 )
-        elif quick_result.get("quick_test_diverged"):
-            # Loss was abnormally high — skip full run
-            logger.warning(
-                f"[Iter {iteration}] Quick test DIVERGING (loss={quick_result.get('val_bpb', '?')}) "
-                f"— skipping full run"
-            )
-            self.crash_memory.record(
-                proposal["changes"], iteration, error_hint="diverging loss in 15s smoke test"
-            )
-            r = TrainResult(
-                iteration=iteration, val_bpb=0, peak_vram_mb=0,
-                training_seconds=0, num_params_m=0, status="crash",
-                changes=proposal["changes"],
-                description=f"DIVERGED (quick test): {proposal.get('hypothesis', '')}",
-            )
-            self.trace.add(r)
-            return r
-        else:
-            logger.info(f"[Iter {iteration}] Quick test passed — proceeding to full training")
+                self.crash_memory.record(
+                    proposal["changes"], iteration, error_hint="diverging loss in 15s smoke test"
+                )
+                r = TrainResult(
+                    iteration=iteration, val_bpb=0, peak_vram_mb=0,
+                    training_seconds=0, num_params_m=0, status="crash",
+                    changes=proposal["changes"],
+                    description=f"DIVERGED (quick test): {proposal.get('hypothesis', '')}",
+                )
+                self.trace.add(r)
+                return r
+            else:
+                logger.info(f"[Iter {iteration}] Quick test passed — proceeding to full training")
 
         # 4. Full training run
         logger.info(f"[Iter {iteration}] Training... (changes: {proposal['changes']})")
@@ -1008,10 +1010,9 @@ class TrainRunner:
             self.trace.add(r)
             return r
 
-        # 5. Keep/discard with simulated annealing (Improvement 7)
+        # 5. Keep/discard decision
         best_before = self.trace.best_bpb
         is_better = result["val_bpb"] < self.trace.best_bpb
-        is_sa_accepted = False
 
         if is_better:
             # Strictly better — always keep
@@ -1023,8 +1024,15 @@ class TrainRunner:
                 f"[Iter {iteration}] KEEP (improved): {result['val_bpb']:.6f} "
                 f"(was {self.trace.best_bpb:.6f}, delta={self.trace.best_bpb - result['val_bpb']:.6f})"
             )
+        elif self.simple_mode:
+            # simple_mode: binary keep/discard — no SA, no revert-to-best
+            status = "discard"
+            logger.info(
+                f"[Iter {iteration}] DISCARD: {result['val_bpb']:.6f} "
+                f"(best={self.trace.best_bpb:.6f})"
+            )
         else:
-            # Worse result — use simulated annealing to decide
+            # Worse result — use simulated annealing to decide (Improvement 7)
             delta = result["val_bpb"] - self.trace.best_bpb  # positive = worse
             self._sa_iteration_count += 1
             self._sa_temp = self._sa_initial_temp * (self._sa_cooling_rate ** self._sa_iteration_count)
@@ -1044,7 +1052,7 @@ class TrainRunner:
             if random.random() < accept_prob:
                 # SA accepted — keep code to enable exploration, but DON'T update best
                 status = "keep"
-                is_sa_accepted = True
+                # SA accepted
                 self.current_code = new_code
                 self._iters_since_improvement += 1
                 logger.info(
@@ -1179,13 +1187,40 @@ class TrainRunner:
         self._proposal_count += 1
 
         crash_warnings = self.crash_memory.get_warning_text()
+        guidance = self.search_config.guidance
+
+        if self.simple_mode:
+            # simple_mode: skip all Level 2 mechanisms — use single PROPOSE_PROMPT directly
+            prompt = PROPOSE_PROMPT.format(
+                current_config=json.dumps(current_config, indent=2),
+                trace_summary=self.trace.summary(),
+                strategy=self.search_config.strategy,
+                active_params=", ".join(self.search_config.active_params),
+                frozen_params=", ".join(self.search_config.frozen_params) or "(none)",
+                guidance=guidance,
+                crash_warnings=crash_warnings,
+                momentum_signals="",
+            )
+            raw = self.client.call(prompt, system=PROPOSE_SYSTEM, max_tokens=1000)
+            result = parse_json_response(raw)
+            if not isinstance(result, dict) or "raw_content" in result:
+                logger.warning(f"[Iter {iteration}] Failed to parse proposal: {raw[:200]}")
+                return {"changes": {}, "hypothesis": "parse failure"}
+            changes = result.get("changes", {})
+            active = set(self.search_config.active_params)
+            filtered = {k: v for k, v in changes.items() if k in active}
+            if len(filtered) < len(changes):
+                dropped = set(changes) - active
+                logger.warning(f"[Iter {iteration}] Dropped frozen params from proposal: {dropped}")
+            result["changes"] = filtered
+            return result
+
         momentum_signals = self.momentum.get_momentum_text()
         elite_pool_text = self.elite_pool.get_elite_text()
         step_size_text = self.step_calibrator.get_step_size_text()
 
         # Improvement 12: Check for plateau and inject diversification directive
         is_plateau, plateau_directive = self.plateau_detector.check_plateau()
-        guidance = self.search_config.guidance
         if is_plateau:
             guidance = guidance + "\n" + plateau_directive
             logger.info(f"[Iter {iteration}] PLATEAU DETECTED — forcing diversification")
@@ -1445,7 +1480,7 @@ class TrainRunner:
                 val_bpb = parsed.get("val_bpb", 0)
                 if val_bpb != val_bpb:  # NaN check
                     parsed["quick_test_diverged"] = True
-                    logger.warning(f"[Quick test] NaN detected in val_bpb")
+                    logger.warning("[Quick test] NaN detected in val_bpb")
                 elif val_bpb > self.QUICK_TEST_LOSS_THRESHOLD:
                     parsed["quick_test_diverged"] = True
                     logger.warning(f"[Quick test] Loss {val_bpb:.4f} > threshold {self.QUICK_TEST_LOSS_THRESHOLD}")

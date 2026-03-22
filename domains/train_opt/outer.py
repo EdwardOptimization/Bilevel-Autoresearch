@@ -11,8 +11,7 @@ from pathlib import Path
 
 from core.llm_client import LLMClient, parse_json_response
 
-from .config import SearchConfig
-from .runner import TrainRunner, TrainTrace
+from .runner import TrainRunner
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +88,7 @@ class TrainOuterLoop:
     def run(self) -> dict:
         """Run the full bilevel experiment."""
         # Baseline
-        baseline = self.runner.run_baseline()
+        self.runner.run_baseline()
         inner_budget = self.runner.search_config.inner_budget
 
         for outer_cycle in range(self.max_outer_cycles):

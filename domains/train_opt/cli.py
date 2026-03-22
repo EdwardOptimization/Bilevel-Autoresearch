@@ -101,7 +101,7 @@ def cmd_inner(args):
     print(f"Keeps:        {sum(1 for r in trace.results if r.status == 'keep')}")
     print(f"Discards:     {sum(1 for r in trace.results if r.status == 'discard')}")
     print(f"Crashes:      {sum(1 for r in trace.results if r.status == 'crash')}")
-    print(f"\nTrace:")
+    print("\nTrace:")
     for r in trace.results:
         print(f"  {r.iteration:3d}: {r.val_bpb:.6f} [{r.status:7s}] {r.description[:50]}")
 
@@ -143,12 +143,12 @@ def cmd_bilevel(args):
     print(f"Outer cycles:  {report['outer_cycles']}")
     print(f"Keeps/Discards/Crashes: {report['keeps']}/{report['discards']}/{report['crashes']}")
 
-    print(f"\nOuter cycle decisions:")
+    print("\nOuter cycle decisions:")
     for ot in report["outer_trace"]:
         print(f"  Cycle {ot['cycle']+1}: {ot['analysis'].get('diagnosis', '')[:80]}")
         print(f"    → strategy={ot['config_after']['strategy']}, frozen={ot['config_after']['frozen']}")
 
-    print(f"\nFull trace:")
+    print("\nFull trace:")
     for r in report["trace"]:
         print(f"  {r['iter']:3d}: {r['bpb']:.6f} [{r['status']:7s}] {r['desc'][:50]}")
 
