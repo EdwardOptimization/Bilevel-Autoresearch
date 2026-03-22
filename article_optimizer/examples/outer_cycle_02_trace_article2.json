@@ -1,0 +1,112 @@
+{
+  "outer_cycle": 2,
+  "article_id": "article2",
+  "run_trace": [
+    {
+      "run_number": 1,
+      "scores": {
+        "A": 6,
+        "B": 7,
+        "C": 8,
+        "D": 6,
+        "E": 6
+      },
+      "overall": 6,
+      "strategy_used": "",
+      "feedback": {
+        "A": "Major claims lack empirical support or explicit derivation. The assertion that 'project management itself is a research line' is stated metaphorically without rigorous grounding. The three illusions (分工幻觉, 并行幻觉, 规模幻觉) are presented without proof. The 'positive net gain' criterion for main lines lacks operational definition.",
+        "B": "Terms like '净增益' (net gain), '状态' (state), 'shared protocol' are used frequently but never operationally defined. The term '收敛' (convergence) shifts between technical and metaphorical usage. Section 6 questions use 'state' ambiguously — is this memory, shared context, or artifact?",
+        "C": "Minor gap: the article references 'shared verifier' and 'shared protocol' concepts extensively but these are only explained in the referenced companion article, not defined here. This could confuse standalone readers.",
+        "D": "The central insight (two paths to large projects: depth-first vs breadth-first) is well-articulated but largely derivable from first principles. Most readers would anticipate that experienced teams can start broad. The insight that project management is 'research' is interesting but underdeveloped — could be explored more deeply.",
+        "E": "Questions in Section 6 are more diagnostic than prescriptive. No concrete examples or case studies. The article doesn't tell practitioners HOW to identify the main line or design the verifier. 'Future research directions' and concrete next steps are absent. Implications are present but vague."
+      },
+      "retried_stages": []
+    },
+    {
+      "run_number": 2,
+      "scores": {
+        "A": 6,
+        "B": 7,
+        "C": 8,
+        "D": 7,
+        "E": 7
+      },
+      "overall": 7,
+      "strategy_used": "",
+      "feedback": {
+        "A": "The 12-week experiment case study lacks methodological rigor—no sample size, no control group details, no statistical significance, and the '30% faster convergence' figure appears without sourcing. Claims like '过早锁定了 shared protocol' and '协调成本 > 产出' are asserted without quantification. The decision tree in Section 6 presents thresholds ('临界点') as actionable criteria without defining what those thresholds actually are.",
+        "B": "Terms like '协调成本' (coordination cost) appear throughout as if quantifiable but are never operationalized. '临界点' (critical point) is central to the decision tree but has no measurable definition. The phrase 'shared objective, shared protocol, shared verifier' (Section 1) appears as a concept cluster but the relationships between these components are implied rather than stated.",
+        "C": "The reference to the first article in Section 8 ends mid-sentence ('详见第一篇'). The scope statement says the two articles cover 'depth convergence' and 'organizational scaling' respectively, but the actual overlap in concepts (verifier, protocol, handoff) between articles is implied rather than systematically mapped.",
+        "D": "While the insights are valuable, several could be derived from first principles in a few minutes: that multi-agent teams need coordination infrastructure, that '做深' means establishing iterative feedback loops, and that organization design should be iterative. The 5-phase growth path, while useful, is more taxonomy than novel discovery.",
+        "E": "The decision tree criteria are stated but not operationalized (e.g., '组织规模是否已超过临界点' lacks measurable thresholds). '经验丰富的组织者' has no definition. The '5个问题' framework is presented as practical but the '是/否' decision points depend on judgment calls the article doesn't guide."
+      },
+      "retried_stages": []
+    },
+    {
+      "run_number": 3,
+      "scores": {
+        "A": 6,
+        "B": 8,
+        "C": 8,
+        "D": 6,
+        "E": 7
+      },
+      "overall": 7,
+      "strategy_used": "",
+      "feedback": {
+        "A": "The 12-week experiment lacks critical methodological details—sample size, domain, task characteristics, and significance testing are absent. The 5-phase growth path is presented as abstraction without empirical derivation. Claims like '收敛速度比深度优先组快 30%' read as asserted facts rather than demonstrated results.",
+        "B": "Minor ambiguity around '净增益为正'—while defined conceptually, no quantitative threshold is given. '协调瓶颈' as a phase label could be more precisely operationalized.",
+        "C": "Could strengthen by explicitly noting where conclusions in this article refine or extend claims from the companion piece.",
+        "D": "The 5-phase growth path (单体→并行补偿→协调瓶颈→分层特化→递归展开) largely recapitulates established organizational theory (startup scaling, Conway's Law, team topology). The depth-first/breadth-first distinction is derivable from general project management principles. Most insights emerge from synthesis rather than discovering genuinely new phenomena.",
+        "E": "Implementation guidance remains abstract—no specific tools, templates, or metrics for determining '何时该分层' versus '何时该维持现状'. The decision tree answers 'what to ask' but not 'how to answer'. Thresholds like '当前是否频繁出现多个agent输出冲突' lack operationalization."
+      },
+      "retried_stages": []
+    },
+    {
+      "run_number": 4,
+      "scores": {
+        "A": 6,
+        "B": 7,
+        "C": 8,
+        "D": 7,
+        "E": 7
+      },
+      "overall": 7,
+      "strategy_used": "",
+      "feedback": {
+        "A": "Critical claims lack rigorous empirical support. The '12-week experiment' case study presents specific numerical claims (30% faster convergence) without methodology, sample selection criteria, or statistical significance. The insight about 'premature protocol locking' is presented with confidence but derived post-hoc. The three 'hallucinations' (幻觉) taxonomy is asserted rather than evidenced.",
+        "B": "Several important terms lack operational definitions: '净增益' is never quantified, '收敛' appears 15+ times without a clear operational definition, and '协调成本' is mentioned repeatedly but never defined. '研究线' in Section 3 shifts meaning from earlier usage. The Phase descriptions use vague metaphorical language ('进化成') without specifying mechanisms.",
+        "C": "The companion article's 'shared verifier' mechanism is heavily relied upon but not elaborated in this article. The 40-case experiment is mentioned without citation or methodology reference. The transition from '一条线做深' to '多线并行' could be more explicitly mapped.",
+        "D": "The depth-first vs breadth-first distinction largely echoes existing project management and organizational theory literature (Mintzberg, Brooks' Law). The decision tree structure, while useful, is derivable from standard project management wisdom. The 'three hallucinations' taxonomy rephrases known anti-patterns rather than discovering new ones.",
+        "E": "The decision tree lacks operational thresholds: '超过临界点' and '频繁出现' are never quantified. No guidance on how to measure '协调成本 > 产出'. The advice '先做深' when no main line exists doesn't specify what '做深 enough' looks like. Section 7's 'organizational design as research line' is compelling but lacks specific experimental protocols."
+      },
+      "retried_stages": []
+    },
+    {
+      "run_number": 5,
+      "scores": {
+        "A": 6,
+        "B": 8,
+        "C": 8,
+        "D": 6,
+        "E": 7
+      },
+      "overall": 7,
+      "strategy_used": "",
+      "feedback": {
+        "A": "The core case study ('某团队的12周实验对比') lacks any verifiable source, methodology, or attribution—presenting specific numbers (38/40, 37/40, 30%, 3 projects) as fact without indicating it's empirical data or illustrative example. This undermines credibility. Key claims like '组织规模扩张' following the described phases lack derivation from first principles.",
+        "B": "Minor inconsistency: 'breadth-first' and 'broad-first' appear to be used interchangeably but without explicit note. Terms like 'gate' and 'handoff' appear without consistent definition. The term 'shared objective/protocol/verifier' could be more precisely distinguished.",
+        "C": "If this is a standalone document, the cross-references to a companion article may not resolve for all readers. The relationship assumes familiarity with the first piece.",
+        "D": "Most insights are derivable from first principles: parallel compensation, coordination bottlenecks, and recursive modularization are well-established in distributed systems and organizational theory literature. The five-phase model systematizes rather than discovers. The core thesis ('depth-first vs breadth-first') is presented as a binary but real-world organizational scaling is more continuous and context-dependent.",
+        "E": "Actionable recommendations remain somewhat abstract: '找到当前资源投入产出比最高的那条线' lacks operationalization. No concrete metrics for '临界点' or '协调不足' thresholds. The case study could serve as a template but lacks methodological detail for replication."
+      },
+      "retried_stages": []
+    }
+  ],
+  "retry_log": [],
+  "lesson_summary": {
+    "total": 20,
+    "high_confidence": 9,
+    "fraction": 0.45
+  }
+}
