@@ -133,9 +133,20 @@ Each of the above is a **human-designed** mechanism change. This project asks: c
 
 ---
 
-## Extending
+## Contributing
 
-Add a new domain in `domains/your_domain/` — see [`domains/README.md`](domains/README.md) and `train_opt/` as a template. You need: a runner (inner loop), an outer loop, a config, and a measurable metric.
+```bash
+git clone https://github.com/EdwardOptimization/Bilevel-Autoresearch.git
+cd Bilevel-Autoresearch && pip install -e ".[dev]"
+python -m pytest tests/ -v          # run tests (offline, no API key)
+ruff check core/ tests/             # lint
+```
+
+**Add a new domain:** create `domains/your_domain/` with `runner.py`, `outer.py`, `config.py`, `cli.py`. See [`domains/README.md`](domains/README.md) and `train_opt/` as a template. Domains are self-contained — import `core.llm_client` for LLM access, but implement your own runner and outer loop.
+
+**Add a new LLM provider:** add an entry to `PROVIDERS` in `core/llm_client.py`. All OpenAI-compatible providers work with `native_sdk: False`.
+
+**Key constraint:** the evaluator must NEVER receive lesson memory. Lessons influence proposals, never judgments.
 
 ## License
 

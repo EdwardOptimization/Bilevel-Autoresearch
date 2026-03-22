@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).parent
 ARTICLES_DIR = BASE_DIR / "articles"
-REFERENCE_DOC = BASE_DIR / "docs" / "reference_frameworks.md"
+REFERENCE_DOC = BASE_DIR / "core" / "reference_frameworks.md"
 
 ARTICLE_FILES = {
     "article1": "article1_llm_research_depth.md",
