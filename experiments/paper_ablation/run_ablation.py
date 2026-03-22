@@ -429,8 +429,12 @@ def run_group_c(
             )
 
             # Dynamically load the (possibly patched) TrainRunner from run_runner_py
-            runner_module = _load_runner_module(run_runner_py)
-            PatchedTrainRunner = runner_module.TrainRunner
+            try:
+                runner_module = _load_runner_module(run_runner_py)
+                PatchedTrainRunner = runner_module.TrainRunner
+            except Exception as e:
+                logger.warning(f"[C{repeat}] Dynamic load failed ({e}), using original TrainRunner")
+                PatchedTrainRunner = TrainRunner
 
             config = _make_search_config(inner_per_cycle, time_budget)
 
