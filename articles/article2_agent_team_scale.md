@@ -1,232 +1,232 @@
-# Agent Team 除了做深，也可以做广：项目如何并行、分层和特化
+# Beyond Depth: How Agent Teams Scale Through Parallelization, Layering, and Specialization
 
-> 副标题：从另一个视角看，"把项目做好"本身就是一条研究线，而项目做大则是这条研究线的组织化展开
+> Subtitle: From another perspective, "making a project work well" is itself a research thread, and scaling the project is the organizational unfolding of that thread
 
-## 摘要
+## Abstract
 
-一个常见误解是：
+A common misconception is:
 
-> 多 Agent team 只有在"先把一条线做深"之后，才可能做大项目。
+> Multi-agent teams can only take on large projects after first "going deep on a single thread."
 
-这并不完整。
+This is incomplete.
 
-更准确地说，Agent Team 做大项目至少有两条成立的路径：
+More precisely, there are at least two viable paths for Agent Teams to scale up to large projects:
 
-1. **depth-first 路径**：先把一条具体主线做深、做稳、做出净增益，再沿着真实瓶颈逐步并行、分层和特化；
-2. **breadth-first / top-down 路径**：在经验足够丰富、对问题结构一开始就看得比较清楚时，可以从一开始就设计分工协作、多线并进的组织结构。
+1. **Depth-first path**: First go deep on a specific main thread, stabilize it, and achieve net positive gains, then gradually parallelize, layer, and specialize along real bottlenecks;
+2. **Breadth-first / top-down path**: When experience is sufficiently rich and the problem structure is clear from the outset, the team can design a division of labor, multi-threaded collaboration, and organizational structure from the very beginning.
 
-也就是说，项目并不一定只能从"深"开始，它也可以从"广"开始；但 broad-first 通常要求：
-- 组织者已经有较强经验；
-- 能较早识别核心模块；
-- 能提前定义 shared objective、shared protocol 和 shared verifier。
+In other words, a project does not necessarily have to start from "depth" --- it can also start from "breadth." However, breadth-first typically requires:
+- The organizer already has strong experience;
+- Core modules can be identified early;
+- Shared objectives, shared protocols, and shared verifiers can be defined in advance.
 
-从另一个视角看，所谓"把一个项目做好"，本身就不是简单执行，而是：
-- 定义目标；
-- 设计验证；
-- 反复试错；
-- 累积经验；
-- 形成分工；
-- 最后沉淀成稳定结构。
+From another perspective, what it means to "make a project work well" is not simply execution, but rather:
+- Defining objectives;
+- Designing verification;
+- Iterating through trial and error;
+- Accumulating experience;
+- Forming a division of labor;
+- Eventually crystallizing into a stable structure.
 
-这本身就是一条研究线。
+This is itself a research thread.
 
-**本文的范围**：上一篇 [`llm_research_depth_convergence.md`](./llm_research_depth_convergence.md) 讨论单线纵深——怎么用 agent 把一条研究线做深做好。本文转向多线展开——当项目不再只有一条线时，怎么并行、分层和特化。
+**Scope of this article**: The previous article [`llm_research_depth_convergence.md`](./llm_research_depth_convergence.md) discussed single-thread depth --- how to use agents to go deep and do well on a single research thread. This article turns to multi-thread expansion --- when a project is no longer a single thread, how to parallelize, layer, and specialize.
 
-因此，这篇文档的核心观点是：
+Therefore, the core thesis of this article is:
 
-> **Agent Team 不只可以做深，也可以做广；真正的问题不是"先深还是先广"，而是当一个项目越做越深、越做越广时，系统如何并行、分层和特化，并且不失去共同目标与收敛能力。**
+> **Agent Teams can go not only deep but also broad. The real question is not "depth first or breadth first," but rather: as a project grows deeper and broader, how can the system parallelize, layer, and specialize without losing its shared objectives and convergence capability.**
 
-### 先定义：这里的"做广"是什么意思
+### First, a definition: What does "going broad" mean here?
 
-本文说的"做广"，不是指"什么都聊一点"，而是指以下几种具体展开：
+What this article means by "going broad" is not "touching on everything a little," but rather the following specific forms of expansion:
 
-- **探索更多 hypothesis / 子问题 / research thread**：同时推进多条研究分支；
-- **多角色分工**：不同 agent 负责不同模块或阶段；
-- **多线并行执行**：多条工作线同时跑，而不是串行；
-- **组织规模扩张**：从单体 → 小组 → 多组 → 分层结构。
+- **Exploring more hypotheses / sub-problems / research threads**: Advancing multiple research branches simultaneously;
+- **Multi-role division of labor**: Different agents are responsible for different modules or stages;
+- **Multi-thread parallel execution**: Multiple work streams run concurrently rather than sequentially;
+- **Organizational scaling**: From monolith to small group to multiple groups to layered structure.
 
-这和第一篇里的"在一条线内展开更多 proposal"不同。第一篇的多 proposal 是在同一条线内部做并行搜索；本文的"广"是在多条不同线之间做资源分配与协调。
-
----
-
-## 1. 做大项目有两条起步路径：从深开始，或从广开始
-
-很多人看到多 Agent 系统时，直觉会先想到：
-
-- 多角色分工
-- 多线程并行
-- 多模块协作
-- 多工具联动
-
-这些东西当然重要，但它们本身并不自动产生结果。
-
-如果系统还没有一条**能稳定产出净增益的主线**，那么：
-- 分工只会变成职责混乱；
-- 并行只会变成噪声放大；
-- 协作只会变成互相转述；
-- 工具只会变成更复杂的表面繁荣。
-
-因此，对大多数团队来说，更稳妥的路径仍然是：
-
-> **先证明某一条线可以稳定收敛。**
-
-这里的"线"可以是：
-- 一个实验优化循环；
-- 一条文献→假设→验证的研究链；
-- 一条 bug triage→修复→验证的工程链；
-- 一条数据→评估→决策的分析链。
-
-只有当其中一条线能够持续做深、持续纠错、持续产出可验证进展，它才配被扩展成更大的系统。
-
-但这并不意味着 broad-first 不成立。
-
-当组织者本身已经足够熟悉该类问题，能够一开始就看出：
-- 哪些模块天然应该拆开；
-- 哪些工作线应该并行推进；
-- 哪些角色应该从 day 1 就特化；
-- 哪些 verifier 和 handoff protocol 必须提前存在；
-
-那么系统完全可以从"广度组织"起步。
-
-也就是说：
-
-> **不是所有项目都必须先从深开始，但如果要从广开始，前提是你已经对项目结构足够有经验，能提前看出分工协作与多线并进的必要性。**
-
-更具体地说，broad-first 所依赖的"经验"至少包括几层：
-
-- **任务分解经验**：知道这类项目大概要拆成哪几块；
-- **路由经验**：知道什么类型的子任务应该交给什么类型的 agent / 角色；
-- **评估基建经验**：知道每条线需要什么样的 verifier 和 gate；
-- **领域先验**：知道这个领域里哪些方向值得并行探索，哪些大概率是死胡同。
-
-缺任何一层，broad-first 都容易退化成"看起来分工了，但没人真的在收敛"。
+This differs from "expanding more proposals within a single thread" as described in Article 1. The multiple proposals in Article 1 involve parallel search within a single thread; the "breadth" in this article involves resource allocation and coordination across multiple different threads.
 
 ---
 
-## 2. 无论从深开始还是从广开始，都必须把局部线做深
+## 1. Two Starting Paths for Scaling Up Projects: Starting from Depth, or Starting from Breadth
 
-做深的意思，不是无限打磨细节，而是：
+When many people encounter multi-agent systems, their first intuition is to think about:
 
-> **在一个足够具体的问题面上，建立 proposal、反馈、验证、回滚、经验累积的稳定闭环。**
+- Multi-role division of labor
+- Multi-threaded parallelism
+- Multi-module collaboration
+- Multi-tool integration
 
-一条线真正"做深"至少意味着：
+These things are certainly important, but they do not automatically produce results by themselves.
 
-1. **目标具体**
-   - 知道这条线在优化什么；
-   - 目标不是抽象口号，而是可比较、可验证的对象。
+If the system does not yet have a **main thread that can reliably produce net positive gains**, then:
+- Division of labor merely becomes role confusion;
+- Parallelism merely becomes noise amplification;
+- Collaboration merely becomes mutual paraphrasing;
+- Tools merely become more elaborate surface prosperity.
 
-2. **反馈够硬**
-   - 知道什么算进步，什么算噪声；
-   - 有 clear gate，而不是靠感觉判断。
+Therefore, for most teams, the safer path remains:
 
-3. **能持续迭代**
-   - 一轮失败不会让系统失忆；
-   - 一轮成功也不会立刻被噪声覆盖。
+> **First prove that a single thread can converge reliably.**
 
-4. **有状态沉淀**
-   - 知道当前工作状态、最佳状态、知识状态分别是什么；
-   - 知道哪些是 proposal，哪些是 verified result。
+Here, a "thread" can be:
+- An experimental optimization loop;
+- A literature-to-hypothesis-to-verification research chain;
+- A bug triage-to-fix-to-verification engineering chain;
+- A data-to-evaluation-to-decision analysis chain.
 
-5. **有可累积经验**
-   - 失败不是丢失，而是变成下一轮搜索的先验；
-   - 成功不是偶然，而是能被复用和验证。
+Only when one of these threads can sustain depth, sustain error correction, and sustain verifiable progress does it deserve to be expanded into a larger system.
 
-也就是说，"做深"本质上就是把一条线变成：
+But this does not mean breadth-first is invalid.
 
-> **一个可以持续压缩误差的系统。**
+When the organizer is already sufficiently familiar with the type of problem and can see from the outset:
+- Which modules naturally should be separated;
+- Which work streams should proceed in parallel;
+- Which roles should be specialized from day 1;
+- Which verifiers and handoff protocols must exist in advance;
 
-如果连这个都没有，那么"做大"只是在把不稳定结构复制到更大范围。
+then the system can absolutely start from "breadth-first organization."
 
-所以更准确的说法不是"做深一定先于做广"，而是：
+In other words:
 
-> **无论一个项目是从深开始，还是从广开始，它最终都必须把若干局部线做深做好，否则广度只会变成管理和通信负担。**
+> **Not all projects must start from depth, but if you want to start from breadth, the prerequisite is that you already have enough experience with the project structure to see in advance the necessity of division of labor, collaboration, and multi-thread advancement.**
 
----
+More specifically, the "experience" that breadth-first depends on includes at least several layers:
 
-## 3. 从另一个视角看：把项目做好，本身就是一条研究线
+- **Task decomposition experience**: Knowing roughly what pieces this type of project needs to be broken into;
+- **Routing experience**: Knowing what type of sub-task should be assigned to what type of agent / role;
+- **Evaluation infrastructure experience**: Knowing what kind of verifier and gate each thread needs;
+- **Domain priors**: Knowing which directions in this domain are worth exploring in parallel, and which are likely dead ends.
 
-这个判断很重要：
-
-> **项目管理本身，不只是执行；项目做好这件事，本身就是一种研究活动。**
-
-为什么？因为一个项目真的要做好，必须不断回答下面这些问题：
-
-- 真实目标是什么？
-- 哪条路径值得投入？
-- 哪些尝试只是局部优化？
-- 哪些模块应该拆出来？
-- 哪些协作是真协作，哪些只是转述？
-- 什么是可复用经验，什么只是一次性偶然？
-
-这和研究线没有本质区别。
-
-一条成熟的研究线通常会经历：
-- 提问题
-- 提假设
-- 做实验
-- 看反馈
-- 修模型
-- 更新方法论
-
-而一个项目被真正做好，也会经历：
-- 明确目标
-- 定义分工
-- 建立验证
-- 反复试错
-- 沉淀流程
-- 形成稳定组织结构
-
-所以从系统角度看：
-
-> **"把项目做好"本身，就是对"如何有效完成目标"这一问题的持续研究。**
-
-这也是为什么，真正强的 project lead / CTO / architect，往往并不只是执行者，而更像一个研究员：
-
-- 研究瓶颈在哪里；
-- 研究哪种组织方式更有效；
-- 研究什么时候该拆、什么时候该并；
-- 研究怎样让系统从局部成功变成长期稳定成功。
+Missing any one of these layers, breadth-first easily degenerates into "looks like there's a division of labor, but nobody is actually converging."
 
 ---
 
-## 4. Agent Team 做大项目的真实成长路径
+## 2. Regardless of Starting from Depth or Breadth, Local Threads Must Be Made Deep
 
-如果把大项目的成长过程抽象一下，通常更像下面这条路径。
+Going deep does not mean endlessly polishing details, but rather:
 
-### Phase 1：单体 MVP
-一开始往往不是团队，而是一个单体：
-- 一个 agent 或一小组高度耦合的 agent；
-- 身兼数职；
-- 目标是先跑通最小闭环。
+> **On a sufficiently specific problem surface, establishing a stable closed loop of proposal, feedback, verification, rollback, and experience accumulation.**
 
-这时最重要的不是优雅分工，而是：
+A thread being truly "made deep" means at least:
 
-> **证明"这条线能 work"。**
+1. **Specific objectives**
+   - Knowing what this thread is optimizing;
+   - The objective is not an abstract slogan, but a comparable, verifiable target.
 
-### Phase 2：并行补偿
-当单体能力逼近当前上限时，系统会自然转向：
-- 多 proposal 并行
-- 多 candidate 并行
-- 多视角 review
-- 多个 cheap worker 同时尝试
+2. **Hard feedback**
+   - Knowing what counts as progress and what counts as noise;
+   - Having clear gates, not relying on gut feeling.
 
-这一步的本质不是"专业分工"，而是：
+3. **Sustained iteration capability**
+   - A failed round does not cause the system to lose its memory;
+   - A successful round is not immediately overwritten by noise.
 
-> **用多个还不错的个体，去补单个个体的边际递减。**
+4. **State crystallization**
+   - Knowing what the current working state, best state, and knowledge state are respectively;
+   - Knowing which results are proposals and which are verified results.
 
-### Phase 3：协调瓶颈出现
-一旦并行规模变大，新的问题立刻出现：
-- 谁该做什么？
-- 谁的结果算数？
-- 哪个 proposal 能进入主线？
-- 如何避免消息和状态互相污染？
+5. **Accumulable experience**
+   - Failures are not lost, but become priors for the next round of search;
+   - Successes are not accidental, but can be reused and verified.
 
-这时系统不再主要卡在"能力不够"，而是卡在：
+In other words, "going deep" is essentially turning a thread into:
 
-> **agreement、protocol、handoff、verifier、state management。**
+> **A system that can continuously compress error.**
 
-### Phase 4：分层与特化
-到了这一步，系统就不能再靠"大家互相聊"了，而必须出现：
+If even this is absent, then "scaling up" is merely replicating an unstable structure to a larger scope.
+
+So a more precise statement is not "depth must always precede breadth," but rather:
+
+> **Regardless of whether a project starts from depth or from breadth, it must eventually make several local threads deep and solid; otherwise, breadth only becomes a management and communication burden.**
+
+---
+
+## 3. From Another Perspective: Making a Project Work Well Is Itself a Research Thread
+
+This observation is important:
+
+> **Project management is not merely execution; making a project work well is itself a form of research activity.**
+
+Why? Because to truly make a project work well, one must continuously answer the following questions:
+
+- What is the real objective?
+- Which paths are worth investing in?
+- Which attempts are merely local optima?
+- Which modules should be factored out?
+- Which collaborations are genuine, and which are just paraphrasing?
+- What constitutes reusable experience, and what is just a one-off coincidence?
+
+This is not fundamentally different from a research thread.
+
+A mature research thread typically goes through:
+- Posing questions
+- Proposing hypotheses
+- Running experiments
+- Examining feedback
+- Refining models
+- Updating methodology
+
+And a project that is truly made to work well also goes through:
+- Clarifying objectives
+- Defining division of labor
+- Establishing verification
+- Iterating through trial and error
+- Crystallizing processes
+- Forming a stable organizational structure
+
+So from a systems perspective:
+
+> **"Making a project work well" is itself continuous research on the question of "how to effectively achieve objectives."**
+
+This is also why truly strong project leads / CTOs / architects are often not merely executors, but more like researchers:
+
+- Researching where bottlenecks lie;
+- Researching which organizational approaches are more effective;
+- Researching when to split and when to merge;
+- Researching how to turn local successes into long-term stable successes.
+
+---
+
+## 4. The Real Growth Trajectory of Agent Teams Scaling Up Projects
+
+If we abstract the growth process of large projects, it typically looks more like the following trajectory.
+
+### Phase 1: Monolithic MVP
+The beginning is usually not a team, but a monolith:
+- A single agent or a small group of tightly coupled agents;
+- Wearing multiple hats;
+- The goal is to first run through the minimum viable loop.
+
+At this point, what matters most is not elegant division of labor, but rather:
+
+> **Proving that "this thread can work."**
+
+### Phase 2: Parallel Compensation
+When the monolith's capability approaches its current ceiling, the system naturally shifts toward:
+- Multiple parallel proposals
+- Multiple parallel candidates
+- Multi-perspective review
+- Multiple cheap workers trying simultaneously
+
+The essence of this step is not "professional specialization," but rather:
+
+> **Using multiple decent individuals to compensate for the diminishing marginal returns of a single individual.**
+
+### Phase 3: Coordination Bottleneck Emerges
+Once the scale of parallelism grows, new problems immediately appear:
+- Who should do what?
+- Whose results count?
+- Which proposal gets to enter the main thread?
+- How to prevent messages and states from contaminating each other?
+
+At this point, the system is no longer primarily bottlenecked on "insufficient capability," but rather on:
+
+> **Agreement, protocol, handoff, verifier, and state management.**
+
+### Phase 4: Layering and Specialization
+At this stage, the system can no longer rely on "everyone chatting with everyone," and must develop:
 - supervisor
 - worker
 - reviewer
@@ -235,177 +235,177 @@
 - control plane
 - shared state
 
-也就是说，系统从"agent 群聊"进化成"agent 组织"。
+In other words, the system evolves from "agent group chat" to "agent organization."
 
-### Phase 5：特化后的模块再次变成新单体
-进一步看会发现：
+### Phase 5: Specialized Modules Become New Monoliths
+Looking further, one sees:
 - research team
 - coding team
 - audit team
 - delivery team
 
-这些模块内部又会重复同样的循环：
-- 先单体
-- 再并行
-- 再分层
-- 再特化
+Each of these modules internally repeats the same cycle:
+- First monolith
+- Then parallelization
+- Then layering
+- Then specialization
 
-所以这不是一次性的，而是递归的。
+So this is not a one-time process, but a recursive one.
 
-这也解释了为什么：
+This also explains why:
 
-> **大项目不是一个超级 agent 做出来的，而是一个能持续分裂、协作、裁决、收敛的 agent 组织做出来的。**
+> **Large projects are not built by a single super-agent, but by an agent organization capable of continuous fission, collaboration, adjudication, and convergence.**
 
 ---
 
-## 5. 为什么一条线做不深，就不可能真的做大
+## 5. Why Failure to Go Deep on Any Single Thread Makes True Scaling Impossible
 
-如果没有任何一条线被做深，大项目通常会退化成三种幻觉。
+If no single thread has been made deep, large projects typically degenerate into three illusions.
 
-### 幻觉一：分工幻觉
-看起来有很多角色：
+### Illusion One: The Division-of-Labor Illusion
+It looks like there are many roles:
 - planner
 - coder
 - reviewer
 - PM
 - analyst
 
-但实际上没人真的在推动某条线收敛，系统只是不断转述。
+But in reality, nobody is actually driving any thread toward convergence --- the system is merely paraphrasing endlessly.
 
-### 幻觉二：并行幻觉
-看起来很多 agent 在同时跑：
-- 多 session
-- 多 task
-- 多日志
-- 多输出
+### Illusion Two: The Parallelism Illusion
+It looks like many agents are running simultaneously:
+- multiple sessions
+- multiple tasks
+- multiple logs
+- multiple outputs
 
-但没有统一目标和统一 gate，最后只是并行地产生更多噪声。
+But without a unified objective and unified gate, the end result is merely generating more noise in parallel.
 
-### 幻觉三：规模幻觉
-看起来系统很大：
-- 很多模块
-- 很多 workflow
-- 很多工具
-- 很多页面
+### Illusion Three: The Scale Illusion
+It looks like the system is large:
+- many modules
+- many workflows
+- many tools
+- many pages
 
-但核心主线没有形成正向累积，所以规模越大，失控越快。
+But the core main thread has not formed positive accumulation, so the larger the scale, the faster the loss of control.
 
-所以说到底：
+So ultimately:
 
-> **不能先靠规模证明价值，只能先靠某条线的稳定收敛证明价值。**
-
----
-
-## 6. 真正该追求的，不是"更多 agent"，而是"更深的主线"
-
-如果把这个判断落到实践里，真正高杠杆的问题不是：
-
-- 还要不要再加一个 agent？
-- 还要不要再接一个工具？
-- 还要不要再补一个 UI？
-
-而是：
-
-### 6.1 当前主线到底是什么？
-系统现在最核心、最该做深的一条线是哪条？
-
-### 6.2 这条线的 verifier 是谁？
-谁来决定：
-- 什么算进步
-- 什么算失败
-- 什么必须回滚
-
-### 6.3 这条线的 state 在哪里？
-- 当前工作状态在哪里？
-- 最佳状态在哪里？
-- 真正学到的东西在哪里？
-
-### 6.4 这条线在哪个阶段该拆？
-- 什么时候并行更划算？
-- 什么时候需要特化角色？
-- 什么时候 communication cost 已经大于收益？
-
-### 6.5 这条线的经验如何跨轮次迁移？
-- 哪些失败值得写入记忆？
-- 哪些成功可以变成 protocol？
-- 哪些规则要沉淀成组织结构？
-
-只有这些问题回答清楚了，Agent Team 才是真的在做大项目，而不是在扮演一个大项目。
+> **You cannot prove value through scale first; you can only prove value first through the stable convergence of a single thread.**
 
 ---
 
-## 7. 可以用第一篇的 depth 方式，去做团队和项目管理本身
+## 6. The Real Goal Is Not "More Agents," but "A Deeper Main Thread"
 
-这一点很容易被忽略，但非常重要：
+If we ground this insight in practice, the truly high-leverage questions are not:
 
-> **"怎么组织 agent team"这件事本身，也可以被当成一条研究线来做深。**
+- Should we add another agent?
+- Should we integrate another tool?
+- Should we add another UI?
 
-也就是说，第一篇提出的那套方法——proposal、反馈、keep/discard、迭代收敛——不只适用于"科研实验"或"代码优化"，它同样适用于：
+But rather:
 
-- **怎么分工更有效**：先试一种分工方式，看效果，不行就换；
-- **怎么定 verifier 和 handoff protocol**：先用一套，观察哪里经常卡，再迭代改进；
-- **怎么设计并行结构**：先并行两条线，看协调成本是不是可接受，再决定要不要再加；
-- **怎么做分层和特化**：先把某个模块拆出去，看是变好了还是变乱了，再决定继续拆还是合回来。
+### 6.1 What exactly is the current main thread?
+Which single thread is the system's most critical one that most deserves to be made deep?
 
-换句话说：
+### 6.2 Who is this thread's verifier?
+Who decides:
+- What counts as progress
+- What counts as failure
+- What must be rolled back
 
-> **组织设计不是一次性的建筑图纸，而是一条持续优化的研究线。**
+### 6.3 Where is this thread's state?
+- Where is the current working state?
+- Where is the best state?
+- Where is the genuinely learned knowledge?
 
-这意味着，第一篇里的所有工具都可以直接复用：
+### 6.4 At what stage should this thread be split?
+- When is parallelism more cost-effective?
+- When are specialized roles needed?
+- When has the communication cost already exceeded the benefit?
 
-- **proposal**：提出一种新的分工方式 / 协调协议 / 角色定义
-- **feedback**：观察这轮分工的实际效果（throughput、错误率、通信成本、交付质量）
-- **keep/discard**：有效就保留，无效就回滚到上一版组织结构
-- **经验累积**：把"这种分工方式为什么失败"写进组织记忆
+### 6.5 How does this thread's experience transfer across iterations?
+- Which failures are worth writing into memory?
+- Which successes can be turned into protocols?
+- Which rules should be crystallized into organizational structure?
 
-所以最终的判断是：
-
-> **如果你在做一个越做越深、越做越广的大项目，那么"怎么管理这个项目"本身也应该被当成一条需要迭代收敛的研究线来经营——用同样的 proposal-feedback-iterate 机制，去持续优化组织结构本身。**
-
-这也是为什么，最强的 agent team 往往不是"一开始就设计对了"的团队，而是"能不断根据反馈调整自己组织方式"的团队。
+Only when these questions are answered clearly is an Agent Team truly working on a large project, rather than merely performing the appearance of one.
 
 ---
 
-## 8. 与《LLM Research Depth Convergence》的关系
+## 7. The Depth Methodology from Article 1 Can Be Applied to Team and Project Management Itself
 
-这篇文档和前一篇文档：
+This point is easily overlooked but extremely important:
+
+> **"How to organize an agent team" can itself be treated as a research thread to go deep on.**
+
+That is to say, the methodology proposed in Article 1 --- proposal, feedback, keep/discard, iterative convergence --- applies not only to "scientific experiments" or "code optimization," but equally to:
+
+- **How to divide labor more effectively**: Try one division-of-labor approach, observe the results, and switch if it doesn't work;
+- **How to define verifiers and handoff protocols**: Start with one set, observe where things frequently get stuck, then iteratively improve;
+- **How to design parallel structures**: Start by parallelizing two threads, see if the coordination cost is acceptable, then decide whether to add more;
+- **How to implement layering and specialization**: First factor out a module, see if things improved or got messier, then decide whether to continue factoring or merge it back.
+
+In other words:
+
+> **Organizational design is not a one-time architectural blueprint, but a continuously optimized research thread.**
+
+This means that all the tools from Article 1 can be directly reused:
+
+- **Proposal**: Propose a new division-of-labor approach / coordination protocol / role definition
+- **Feedback**: Observe the actual results of this round of division of labor (throughput, error rate, communication cost, delivery quality)
+- **Keep/discard**: Keep if effective, roll back to the previous version of organizational structure if not
+- **Experience accumulation**: Write "why this division-of-labor approach failed" into organizational memory
+
+So the final insight is:
+
+> **If you are working on a project that is growing ever deeper and ever broader, then "how to manage this project" should itself be treated as a research thread requiring iterative convergence --- using the same proposal-feedback-iterate mechanism to continuously optimize the organizational structure itself.**
+
+This is also why the strongest agent teams are often not the ones that "got the design right from the start," but the ones that "can continuously adjust their own organizational approach based on feedback."
+
+---
+
+## 8. Relationship with "LLM Research Depth Convergence"
+
+This article and the previous article:
 
 - [`llm_research_depth_convergence.md`](./llm_research_depth_convergence.md)
 
-是同一个问题的两个视角，但分工不一样。
+are two perspectives on the same problem, but with different emphases.
 
-前一篇更强调：
-- 自动化科研项目本质上是在探索：**怎么用 agent 把一件事做深做好**；
-- 为什么这件事和优化视角、proposal quality、feedback、iteration、shared verifier 有关；
-- 为什么 specific target、protocol 和 agreement 机制是前提。
+The previous article emphasizes:
+- Automated research projects are essentially exploring: **how to use agents to go deep and do well on a single task**;
+- Why this relates to the optimization perspective, proposal quality, feedback, iteration, and shared verifiers;
+- Why specific targets, protocols, and agreement mechanisms are prerequisites.
 
-这一篇则进一步强调：
+This article further emphasizes:
 
-> **Agent 除了做深之外，也可以做广；真正值得讨论的是：当项目越做越深、越做越广时，系统如何并行、分层和特化。**
+> **Agents can go not only deep but also broad; what truly deserves discussion is: as a project grows deeper and broader, how does the system parallelize, layer, and specialize.**
 
-也就是说：
-- 前一篇回答"如何把一条研究线做深做好"；
-- 这一篇回答"项目在变深、变广之后，如何组织成 team、如何扩成更大的结构"。
+In other words:
+- The previous article answers "how to go deep and do well on a single research thread";
+- This article answers "after a project has grown deeper and broader, how to organize it into a team and scale it into a larger structure."
 
-两篇合起来，才构成一个更完整的判断：
+Together, the two articles form a more complete thesis:
 
-> **一篇讲 depth convergence，一篇讲 organizational scaling。前者解释'怎么把事情做深'，后者解释'事情变深又变广后，怎么组织起来做大'。**
+> **One article discusses depth convergence, the other discusses organizational scaling. The former explains "how to make things deep," the latter explains "once things have grown both deep and broad, how to organize them to scale up."**
 
 ---
 
-## 9. 最终结论
+## 9. Conclusion
 
-这篇文档最终想表达的是：
+What this article ultimately aims to express is:
 
-1. **Agent Team 做大项目可以从"深"开始，也可以从"广"开始；broad-first 对经验丰富的团队完全成立。**
-2. **但无论哪条路，项目在变深又变广之后，都必须回答同一个问题：如何并行、分层和特化而不失控。**
-3. **项目做好本身不是纯执行，而是一条关于"如何有效完成目标"的研究线。**
-4. **Agent Team 的成长路径有两种典型形态：**
-   - **depth-first**：单体 MVP → 并行补偿 → 协调瓶颈 → 分层特化 → 递归展开
-   - **breadth-first**：经验驱动的一开始就多线并进 → 遇到协调瓶颈 → 分层特化 → 每层再各自深挖
-5. **两种路径都会在中后期遇到同样的问题：通信成本、state 同步、verifier 和 protocol。**
-6. **真正该追求的不是更多 agent，而是：在系统变大的过程中，保持每一条局部主线的收敛能力。**
+1. **Agent Teams can start scaling large projects either from "depth" or from "breadth"; breadth-first is entirely valid for experienced teams.**
+2. **But regardless of the path, after a project has grown both deeper and broader, it must answer the same question: how to parallelize, layer, and specialize without losing control.**
+3. **Making a project work well is not pure execution, but a research thread about "how to effectively achieve objectives."**
+4. **The growth trajectory of Agent Teams has two typical forms:**
+   - **Depth-first**: Monolithic MVP -> parallel compensation -> coordination bottleneck -> layering and specialization -> recursive unfolding
+   - **Breadth-first**: Experience-driven multi-thread advancement from the start -> coordination bottleneck encountered -> layering and specialization -> each layer then deepens independently
+5. **Both paths encounter the same challenges in the middle and later stages: communication cost, state synchronization, verifiers, and protocols.**
+6. **The real goal is not more agents, but rather: maintaining the convergence capability of every local main thread as the system grows.**
 
-因此，可以把全文压成一句话：
+Therefore, the entire article can be compressed into a single sentence:
 
-> **Agent Team 既可以做深，也可以做广；做大项目不是单一起步方式的问题，而是当项目越做越深、越做越广时，如何通过并行、分层和特化，在组织化扩张的同时保持每条局部主线的稳定收敛。**
+> **Agent Teams can go both deep and broad; scaling up large projects is not a matter of which starting approach to choose, but rather, as a project grows ever deeper and ever broader, how to maintain the stable convergence of every local main thread while organizationally expanding through parallelization, layering, and specialization.**

@@ -31,7 +31,7 @@ from src.llm_client import configure
 from src.inner_loop import InnerLoopController
 from src.outer_loop import OuterAnalyzer, OuterLoopController
 from src.runner import InnerRunner
-from src.state import OuterLoopState
+from src.state import OuterLoopState, InnerLoopState
 
 logging.basicConfig(
     level=logging.INFO,
@@ -164,6 +164,101 @@ def cmd_inner(args):
     print(f"\n  Score trace: {[r.overall for r in inner.run_trace]}")
 
 
+def cmd_mechresearch(args):
+    """Level 2 mechanism research — outer LLM generates a new pipeline stage."""
+    minimax_key = os.environ.get("MINIMAX_API_KEY", "")
+    deepseek_key = os.environ.get("DEEPSEEK_API_KEY", "")
+    if not minimax_key:
+        sys.exit("ERROR: MINIMAX_API_KEY not set")
+    if not deepseek_key:
+        sys.exit("ERROR: DEEPSEEK_API_KEY not set")
+
+    from src.mechanism_research import MechanismResearcher
+
+    article_id = args.article or "article2"
+    articles = load_articles([article_id])
+    article_content = articles[article_id]
+
+    # --- Build baseline inner states ---
+    # Run args.baseline_cycles inner cycles to give the researcher trace data.
+    # Each cycle is a fresh InnerLoopController run on the original article.
+    inner_states: list[InnerLoopState] = []
+    runner = make_runner(minimax_key)
+
+    if args.baseline_cycles > 0:
+        logger.info(f"Running {args.baseline_cycles} baseline cycle(s) to build trace data...")
+        for cycle_idx in range(args.baseline_cycles):
+            runner.outer_cycle = cycle_idx + 1
+            outer_state = OuterLoopState(base_dir=BASE_DIR, original_articles=articles)
+            outer_state.begin_cycle()
+            ctrl = InnerLoopController(
+                runner=runner,
+                max_iterations=args.max_inner,
+                convergence_threshold=8,
+                convergence_consecutive=3,
+            )
+            state = ctrl.run_cycle(article_id, outer_state)
+            inner_states.append(state)
+            scores = [r.overall for r in state.run_trace]
+            logger.info(f"  Cycle {cycle_idx+1}: scores={scores}, peak={state.peak_score()}")
+    else:
+        # No baseline: pass a single empty state so researcher has minimal context
+        logger.warning("No baseline cycles — researcher will have minimal trace data.")
+        inner_states = [InnerLoopState(original_article=article_content, article_id=article_id)]
+
+    outer_lessons: list[dict] = []
+
+    # --- Run mechanism research ---
+    researcher = MechanismResearcher(
+        model="deepseek-chat",
+        api_key=deepseek_key,
+        provider="deepseek",
+        max_code_retries=3,
+        artifacts_base=BASE_DIR / "artifacts" / "mechanism_research",
+    )
+
+    logger.info("Starting Level 2 mechanism research session...")
+    result = researcher.research(article_id, inner_states, outer_lessons)
+
+    print("\n" + "=" * 60)
+    print("MECHANISM RESEARCH COMPLETE")
+    print("=" * 60)
+    print(f"Session ID:    {result.session_id}")
+    print(f"Domain source: {result.domain_source[:80]}")
+    print(f"Stage name:    {result.stage_name}")
+    print(f"Inject after:  {result.inject_after}")
+    print(f"Code retries:  {result.code_retries}")
+    print(f"Stage file:    {result.stage_path}")
+
+    if not args.skip_validate:
+        # --- Validate: run inner loop with injected stage ---
+        print("\nValidating generated stage against inner loop...")
+        # Fresh runner so baseline stages are clean (no residual state)
+        val_runner = make_runner(minimax_key)
+        val_runner.outer_cycle = 99  # separate artifact namespace
+        validation = researcher.validate(result, article_content, val_runner, max_inner=args.max_inner)
+
+        print("\n" + "-" * 40)
+        print("VALIDATION RESULTS")
+        print("-" * 40)
+        print(f"Score trace:   {validation['score_trace']}")
+        print(f"Peak score:    {validation['peak_score']}/10")
+        print(f"Runs to 7/10:  {validation['runs_to_7'] or 'never'}")
+        print(f"Runs to 8/10:  {validation['runs_to_8'] or 'never'}")
+        print(f"Converged:     {validation['converged']}")
+        print(f"Lessons:       {validation['lessons_extracted']}")
+
+        # Compare against baseline if we have it
+        if inner_states and inner_states[0].run_trace:
+            baseline_peak = max(s.peak_score() for s in inner_states)
+            delta = validation["peak_score"] - baseline_peak
+            sign = "+" if delta >= 0 else ""
+            print(f"\nBaseline peak: {baseline_peak}/10")
+            print(f"New peak:      {validation['peak_score']}/10  ({sign}{delta})")
+
+    print(f"\nArtifacts: {BASE_DIR / 'artifacts' / 'mechanism_research' / ('session_' + result.session_id)}")
+
+
 def cmd_once(args):
     """Single pipeline pass — smoke test."""
     minimax_key = os.environ.get("MINIMAX_API_KEY", "")
@@ -178,7 +273,6 @@ def cmd_once(args):
 
     runner = make_runner(minimax_key)
 
-    from src.state import InnerLoopState
     inner = InnerLoopState(
         original_article=articles[article_id],
         article_id=article_id,
@@ -214,6 +308,20 @@ def main():
     p_once = sub.add_parser("once", help="Single pipeline pass (smoke test)")
     p_once.add_argument("--article", choices=list(ARTICLE_FILES), default="article15")
 
+    # mechresearch
+    p_mech = sub.add_parser(
+        "mechresearch",
+        help="Level 2: outer LLM researches + generates a new pipeline stage",
+    )
+    p_mech.add_argument("--article", choices=list(ARTICLE_FILES), default="article2",
+                        help="Article to use as the research target (default: article2)")
+    p_mech.add_argument("--baseline-cycles", type=int, default=2,
+                        help="Inner cycles to run for baseline trace data (default: 2)")
+    p_mech.add_argument("--max-inner", type=int, default=5,
+                        help="Max inner runs per cycle (default: 5)")
+    p_mech.add_argument("--skip-validate", action="store_true",
+                        help="Skip validation run (research only, no inner loop execution)")
+
     args = parser.parse_args()
     if args.cmd == "run":
         cmd_run(args)
@@ -221,6 +329,8 @@ def main():
         cmd_inner(args)
     elif args.cmd == "once":
         cmd_once(args)
+    elif args.cmd == "mechresearch":
+        cmd_mechresearch(args)
     else:
         parser.print_help()
 

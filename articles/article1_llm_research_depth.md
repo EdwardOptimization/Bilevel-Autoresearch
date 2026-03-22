@@ -1,501 +1,499 @@
-# 自动化科研项目如何把事情做深做好：一个优化视角
+# How Automated Research Systems Achieve Depth: An Optimization Perspective
 
-> 副标题：LLM 的研究能力更像迭代收敛而非一次性正确 - 一份内部方法论短论文
+> Subtitle: LLM research capability resembles iterative convergence rather than one-shot correctness -- An internal methodology paper
 
-## 摘要
+## Abstract
 
-这份文档从**优化视角**出发，讨论一个并不直观、但非常重要的判断：
+This document takes an **optimization perspective** to discuss a non-obvious but critically important claim:
 
-> **最近这一波自动化科研项目（AutoResearch、AutoResearchClaw、EvoScientist 等），都包含一个共同的核心成分：用 agent 把某一条研究线做深做好。这个成分与优化理论里的黑箱搜索、迭代收敛、proposal quality 高度对应——虽然真正有效的系统还依赖 evaluator、memory、tool use、问题表征和先验知识注入，但"高质量 proposal × 反馈 × 迭代"这条主线，是它们共享的底层机制。**
+> **The recent wave of automated research projects (AutoResearch, AutoResearchClaw, EvoScientist, etc.) all share a common core component: using agents to pursue depth and quality along a single research thread. This component closely corresponds to black-box search, iterative convergence, and proposal quality in optimization theory -- although truly effective systems also depend on evaluators, memory, tool use, problem representation, and prior knowledge injection, the main thread of "high-quality proposal x feedback x iteration" is their shared underlying mechanism.**
 
-如果这个判断成立，那么很多对"自动化科研"的理解都要改写：
+If this claim holds, then many conventional understandings of "automated research" need to be revised:
 
-- 它不是在让 AI"更聪明地一步答对"；
-- 而是在建立一套：**高质量 proposal × 真实反馈 × keep/discard × 大量迭代** 的收敛系统；
-- 不同项目的差别，不在于谁"更自动"，而在于谁把哪一层做得更深。
+- It is not about making AI "smarter at getting things right on the first try";
+- Rather, it is about building a convergence system based on: **high-quality proposal x real feedback x keep/discard x extensive iteration**;
+- The differences between projects lie not in who is "more automated," but in who achieves greater depth at which layer.
 
-换句话说，LLM 的研究能力，很多时候不是体现在广义上的 breadth（无限宽任务空间的一步到位能力），而是体现在 depth（在一个足够 specific 的问题空间里，沿着高质量方向持续迭代、持续修正、持续逼近目标的能力）。
+In other words, the research capability of LLMs is often not reflected in breadth (the ability to get things right in one shot across an infinitely wide task space), but rather in depth (the ability to iteratively refine, correct, and converge toward the objective within a sufficiently specific problem space, following high-quality directions).
 
-**本文的范围**：只讨论单条研究线的纵深优化——怎么把一件事做深做好。不讨论多方向并行、团队分层、角色特化；这些留到姊妹篇 [`agent_team_how_large_projects_emerge.md`](./agent_team_how_large_projects_emerge.md)。
+**Scope of this article**: This article only discusses depth optimization along a single research thread -- how to achieve depth and quality on a single task. It does not discuss multi-direction parallelism, team layering, or role specialization; those are reserved for the companion article [`agent_team_how_large_projects_emerge.md`](./agent_team_how_large_projects_emerge.md).
 
-换句话说，LLM 的强项往往不是"第一次就完全答对"，而是：
+In other words, the strength of LLMs often lies not in "getting it perfectly right on the first try," but rather in:
 
-1. 给出一个显著优于随机的 proposal；
-2. 读取外部反馈；
-3. 更新下一轮 proposal；
-4. 通过 keep / discard / rollback 持续压缩误差；
-5. 在迭代足够多时实现收敛。
+1. Generating a proposal significantly better than random;
+2. Reading external feedback;
+3. Updating the next-round proposal;
+4. Continuously compressing error through keep / discard / rollback;
+5. Achieving convergence after sufficient iterations.
 
-这个过程既像控制论，也像黑箱优化，也像带强先验的 RL / policy search，还带有一种工程意义上的"上下文后验更新"。
+This process resembles control theory, black-box optimization, RL / policy search with strong priors, and a form of engineering-level "in-context posterior updating."
 
-本文的核心命题是：
+The core thesis of this article is:
 
-> **LLM research depth = 在一个足够 narrow 且 feedback 可验证的问题面上，用高于随机很多的 proposal quality，配合 context update、keep/discard 机制与足够多的 iteration，把误差乘子从大于 1 压到小于 1，并持续逼近 0。**
+> **LLM research depth = On a sufficiently narrow problem surface with verifiable feedback, using proposal quality far above random, combined with context update, keep/discard mechanisms, and sufficient iterations, compressing the error multiplier from above 1 to below 1, and continuously driving it toward 0.**
 
-本文的定位是：
+The positioning of this article is:
 
-> **一份内部方法论文档：它试图提出一个足够强、足够有解释力的工程框架，但不把自己伪装成严格理论证明。**
+> **An internal methodology document: it attempts to propose a sufficiently strong and explanatory engineering framework, without disguising itself as a rigorous theoretical proof.**
 
-也就是说，文中提到的控制论、RL、贝叶斯、alpha 收敛模型，主要用于帮助理解系统行为、比较不同系统设计，并提炼可操作的研究直觉，而不是声称存在严格的一般性定理。
-
----
-
-## 1. 研究能力的两个维度：breadth 与 depth
-
-### 1.1 Breadth 是什么
-
-Breadth 指模型面对宽任务空间时的覆盖能力，例如：
-
-- 同时处理很多类型完全不同的问题；
-- 在任务定义仍然模糊时给出不错的第一版；
-- 对陌生领域快速给出可用框架；
-- 在没有明确 reward 的场景下仍然给出"看起来合理"的行动建议。
-
-这是"广度智能"。
-
-### 1.2 Depth 是什么
-
-Depth 指模型在一个 **specific enough** 的目标上，沿着清晰反馈面持续逼近目标的能力，例如：
-
-- 针对一个确定指标反复优化；
-- 针对一个具体 bug 不断缩小定位范围；
-- 针对一个具体 pipeline 反复修到收敛；
-- 针对一个固定实验 harness，在很多轮试错后显著提升结果。
-
-这是"深度收敛能力"。
-
-### 1.3 这篇文档的立场
-
-本文认为，LLM 在研究上最可靠、最可工程化的强项，不是 breadth，而是 depth。
-
-也就是说：
-
-- 它不一定能对一个无限宽问题一次性做出最优判断；
-- 但它往往能对一个压缩得足够 specific 的问题持续优化；
-- 一旦有真实反馈面与迭代机会，它就可能表现出明显的收敛性。
+That is to say, the control theory, RL, Bayesian, and alpha convergence models mentioned in this article are primarily used to help understand system behavior, compare different system designs, and distill actionable research intuitions, rather than claiming the existence of rigorous general theorems.
 
 ---
 
-## 2. 为什么这不是纯随机搜索
+## 1. Two Dimensions of Research Capability: Breadth and Depth
 
-如果系统只是纯随机搜索，那么在高维动作空间里会遇到经典问题：
+### 1.1 What Is Breadth
 
-- 大多数方向都无效；
-- 大多数改动都互相干扰；
-- reward 稀疏且 noisy；
-- 需要极多试验才能找到稳定改进方向。
+Breadth refers to the model's coverage capability across a wide task space, for example:
 
-LLM 的关键不同点在于，它不是 uniform random sampler。
+- Handling many completely different types of problems simultaneously;
+- Producing a decent first version when the task definition is still vague;
+- Quickly providing a usable framework for unfamiliar domains;
+- Offering "seemingly reasonable" action suggestions even without a clear reward signal.
 
-### 2.1 LLM 的 proposal 有强先验
+This is "breadth intelligence."
 
-LLM 给出的 proposal 往往天然满足：
+### 1.2 What Is Depth
 
-- **语义上合理**：动作通常落在人类常见工程/研究操作附近；
-- **局部上自洽**：它改动的东西往往在语义层面能自圆其说；
-- **与上下文一致**：会参考已有日志、历史失败、当前目标；
-- **更接近"经验密集区"**：比随机点落在更高价值的区域。
+Depth refers to the model's ability to continuously converge toward the objective along a clear feedback surface on a **specific enough** target, for example:
 
-因此它本质上不是：
+- Repeatedly optimizing against a fixed metric;
+- Continuously narrowing down the localization of a specific bug;
+- Iteratively fixing a specific pipeline until convergence;
+- Significantly improving results after many rounds of trial and error on a fixed experimental harness.
+
+This is "depth convergence capability."
+
+### 1.3 The Position of This Article
+
+This article argues that the most reliable and engineerable strength of LLMs in research is not breadth, but depth.
+
+That is to say:
+
+- They may not always make the optimal judgment on an infinitely wide problem in one shot;
+- But they can often continuously optimize a problem that has been compressed to be sufficiently specific;
+- Once there is a real feedback surface and iteration opportunities, they can exhibit clear convergence behavior.
+
+---
+
+## 2. Why This Is Not Pure Random Search
+
+If the system were pure random search, it would encounter classic problems in high-dimensional action spaces:
+
+- Most directions are ineffective;
+- Most changes interfere with each other;
+- Reward is sparse and noisy;
+- An extremely large number of trials are needed to find stable improvement directions.
+
+The key difference with LLMs is that they are not uniform random samplers.
+
+### 2.1 LLM Proposals Have Strong Priors
+
+LLM proposals naturally tend to satisfy:
+
+- **Semantically reasonable**: Actions typically fall near common human engineering/research operations;
+- **Locally self-consistent**: The changes they make tend to be internally coherent at the semantic level;
+- **Consistent with context**: They reference existing logs, historical failures, and current objectives;
+- **Closer to "experience-dense regions"**: They land in higher-value areas compared to random points.
+
+Therefore, it is essentially not:
 
 > random search
 
-而更像：
+But rather more like:
 
 > **prior-guided search**
 
-或者更直白：
+Or more plainly:
 
 > **high-quality proposal distribution**
 
-### 2.2 为什么"高于随机一点点"就足够重要
+### 2.2 Why Being "Slightly Better Than Random" Is Already Profoundly Important
 
-哪怕 LLM 每一轮只比随机好一点，也会在多轮迭代中不断复利：
+Even if the LLM is only slightly better than random each round, the advantage compounds over multiple iterations:
 
-- 少一点 crash；
-- 少一点无意义动作；
-- 多一点命中有效方向；
-- 多一点利用历史经验；
-- 多一点在正确局部空间里探索。
+- Fewer crashes;
+- Fewer meaningless actions;
+- More hits on effective directions;
+- More utilization of historical experience;
+- More exploration within the correct local space.
 
-如果每轮 edge 都略微为正，累计效应会非常大。
+If the edge is slightly positive each round, the cumulative effect becomes very large.
 
-这和量化里"微弱 edge × 高频重复 = 强结果"是一个逻辑。
+This follows the same logic as in quantitative finance: "weak edge x high-frequency repetition = strong outcome."
 
 ---
 
-## 3. 这个过程为什么同时像控制论、RL 和贝叶斯
+## 3. Why This Process Simultaneously Resembles Control Theory, RL, and Bayesian Inference
 
-### 3.1 控制论视角：这是一个 feedback controller
+### 3.1 Control Theory Perspective: This Is a Feedback Controller
 
-如果用最朴素的话描述这类系统，它常常表现为：
+Described in the simplest terms, such systems often behave as:
 
-- 不够就加；
-- 多了就减；
-- 炸了就回退；
-- 有效就沿这个方向继续推。
+- Not enough? Push harder;
+- Too much? Pull back;
+- Crashed? Roll back;
+- Working? Keep pushing in this direction.
 
-这就是明显的反馈控制结构。
+This is clearly a feedback control structure.
 
-#### 控制论映射
+#### Control Theory Mapping
 
-- **被控对象**：任务本身（代码、实验系统、研究流程、prompt surface）
-- **观测量**：评估结果、指标变化、报错、日志、延迟、成本
-- **控制输入**：下一轮 proposal（改 prompt、改代码、调超参、改流程）
-- **误差**：当前状态相对目标状态的差距
-- **安全回路**：rollback、discard、freeze、guard
+- **Plant**: The task itself (code, experimental system, research pipeline, prompt surface)
+- **Observed variable**: Evaluation results, metric changes, errors, logs, latency, cost
+- **Control input**: Next-round proposal (modify prompt, modify code, tune hyperparameters, modify pipeline)
+- **Error**: Gap between current state and target state
+- **Safety loop**: Rollback, discard, freeze, guard
 
-在这种意义上，它像一个带记忆和语言先验的控制器。
+In this sense, it resembles a controller with memory and language priors.
 
-### 3.2 RL / policy search 视角：这是一个黑箱策略优化过程
+### 3.2 RL / Policy Search Perspective: This Is a Black-Box Policy Optimization Process
 
-另一种看法是：
+Another view is:
 
-- 系统提出一个动作 proposal；
-- 环境执行它；
-- 环境返回 reward / penalty；
-- 系统根据 reward 修正下一轮动作。
+- The system proposes an action proposal;
+- The environment executes it;
+- The environment returns reward / penalty;
+- The system adjusts the next-round action based on the reward.
 
-这已经非常接近：
+This is already very close to:
 
 - black-box optimization
 - bandit
 - policy search
-- REINFORCE 风格的 trial-and-error
+- REINFORCE-style trial-and-error
 
-它并不是严格的 PPO，但工程感受很像"极薄的一层 RL"：
+It is not strictly PPO, but the engineering feel is very much like "an extremely thin layer of RL":
 
-- policy = 当前的研究策略 / prompt / context state
-- action = 本轮改动
-- reward = 评估结果好坏
+- policy = current research strategy / prompt / context state
+- action = this round's changes
+- reward = evaluation result quality
 - update = keep / discard / revert / next proposal
 
-### 3.3 贝叶斯视角：context 在功能上像一种工程上的后验更新
+### 3.3 Bayesian Perspective: Context Functionally Resembles an Engineering-Level Posterior Update
 
-从工程上讲，LLM inference **可以被类比为**一种 amortized Bayesian update：
+From an engineering standpoint, LLM inference **can be analogized as** a form of amortized Bayesian update:
 
-- 预训练权重 = 大先验；
-- 当前 context = 新观测；
-- 当前输出分布 = 后验近似。
+- Pre-training weights = broad prior;
+- Current context = new observation;
+- Current output distribution = posterior approximation.
 
-严格来说，Transformer 不是在显式写贝叶斯公式，但可以把它理解为：
+Strictly speaking, the Transformer is not explicitly computing Bayes' formula, but it can be understood as:
 
-> **每次新 evidence 都在重加权原有先验。**
+> **Each new piece of evidence re-weights the existing prior.**
 
-这就是为什么：
+This is why:
 
-- 它不是每次从零猜；
-- 它会吸收失败经验；
-- 它会根据最近 evidence 迅速改变 proposal 分布。
+- It does not guess from scratch each time;
+- It absorbs failure experience;
+- It rapidly changes proposal distribution based on recent evidence.
 
 ---
 
-## 4. 一个简单但有用的收敛模型
+## 4. A Simple but Useful Convergence Model
 
-为了讨论"模型能力 + 迭代次数"的关系，可以引入一个极简模型。
+To discuss the relationship between "model capability + number of iterations," we can introduce a minimalist model.
 
-先强调一句：
+First, an important caveat:
 
-> **这一节不是正式收敛理论，只是一个帮助思考的粗粒度工程模型。**
+> **This section is not formal convergence theory, but only a coarse-grained engineering model to aid thinking.**
 
-它的作用是帮助判断系统更像在收敛、停滞还是发散，而不是精确预测真实系统的动力学。
+Its purpose is to help determine whether the system is more likely converging, stagnating, or diverging, rather than precisely predicting real system dynamics.
 
-设：
+Let:
 
-- `d_t` = 第 `t` 轮时距离目标的误差
-- `alpha` = 本轮后剩余误差的缩放系数
+- `d_t` = error distance from the target at round `t`
+- `alpha` = scaling factor for remaining error after this round
 
-则有：
+Then:
 
 ```text
 d_(t+1) = alpha * d_t
 ```
 
-### 4.1 alpha 的意义
+### 4.1 The Meaning of Alpha
 
-- `alpha < 1`：收敛
-- `alpha = 1`：停滞
-- `alpha > 1`：发散
+- `alpha < 1`: Convergence
+- `alpha = 1`: Stagnation
+- `alpha > 1`: Divergence
 
-这个 `alpha` 可以理解为：
+This `alpha` can be understood as:
 
-> **在当前任务复杂度、当前模型能力、当前反馈质量、当前 harness 设计下，每轮迭代对剩余误差的有效压缩能力。**
+> **The effective error compression capability per iteration, given the current task complexity, model capability, feedback quality, and harness design.**
 
-### 4.2 用户提出的直觉版本
+### 4.2 An Intuitive Version
 
-这是一个非常好的工程类比：
+This is a very useful engineering analogy:
 
-- 模型很差：可能每轮像乘 `1.05`
-- 模型略差：可能像乘 `1.01`
-- 模型还行：可能像乘 `0.99`
-- 模型强：可能像乘 `0.95`
-- 模型特别强：可能像乘 `0.80`
-- 最终逼近 `0`：表示收敛
+- Very weak model: Each round might be like multiplying by `1.05`
+- Slightly weak model: Might be like multiplying by `1.01`
+- Decent model: Might be like multiplying by `0.99`
+- Strong model: Might be like multiplying by `0.95`
+- Very strong model: Might be like multiplying by `0.80`
+- Approaching `0`: Indicates convergence
 
-这个判断虽然粗糙，但非常抓本质。
+This judgment, while coarse, captures the essence very well.
 
-### 4.3 为什么这个模型有用
+### 4.3 Why This Model Is Useful
 
-因为它直接解释了两个事实：
+Because it directly explains two facts:
 
-1. **模型能力强，迭代次数可以少很多**；
-2. **模型能力弱，必须靠大量迭代，甚至可能永远磨不下来。**
+1. **Strong model capability means far fewer iterations are needed**;
+2. **Weak model capability requires massive iteration, and may never grind through.**
 
-例如：
+For example:
 
-- 若 `alpha = 0.99`，收敛非常慢；
-- 若 `alpha = 0.95`，几十轮可能就有明显压缩；
-- 若 `alpha = 0.80`，少量迭代就能快速逼近；
-- 若 `alpha = 1.01`，你越迭代越偏；
-- 若 `alpha = 1.05`，系统会明显失稳。
-
----
-
-## 5. 模型能力到底体现在什么地方
-
-一个常见误解是：
-
-> 模型能力 = 一次性答得有多对。
-
-但在自动化研究或自动优化系统里，更关键的其实是：
-
-> **模型是否能把有效误差乘子压到 1 以下。**
-
-### 5.1 proposal quality 才是核心
-
-模型强，不一定意味着它第一轮永远正确；
-模型强，更重要的是它：
-
-- 更少提出明显坏 proposal；
-- 更会利用历史 evidence；
-- 更会把 broad 问题压成 narrow subproblem；
-- 更少在噪声上过拟合；
-- 更少出现无意义 drift；
-- 更容易在 keep/discard 机制下留下真正有效的改动。
-
-### 5.2 强模型的优势不是绝对正确，而是更有机会得到更低的有效 alpha
-
-更准确地说：
-
-> **在相同任务切分、相同 harness、相同反馈条件下，更强的模型通常更有机会把每轮有效误差乘子压得更低。**
-
-这里要注意：
-
-- `alpha` 不是模型的单独属性；
-- 它同时受任务难度、问题切分方式、反馈质量、动作面设计、rollback 机制影响；
-- 所以"模型强 = alpha 更低"只是条件命题，不是普适定律。
-
-也因此：
-
-- 强模型 + 少量迭代 = 也可能快速收敛；
-- 弱模型 + 大量迭代 = 可能勉强收敛；
-- 很弱模型 + 再多迭代 = 仍然发散。
+- If `alpha = 0.99`, convergence is very slow;
+- If `alpha = 0.95`, significant compression can occur within dozens of rounds;
+- If `alpha = 0.80`, a small number of iterations can rapidly converge;
+- If `alpha = 1.01`, the more you iterate, the more you drift;
+- If `alpha = 1.05`, the system will visibly destabilize.
 
 ---
 
-## 6. 为什么 "specific enough" 是必要条件
+## 5. Where Model Capability Actually Manifests
 
-这件事不是对所有任务都成立。
+A common misconception is:
 
-LLM 的 depth 能力，往往只有在问题被切到"足够具体"时才真正启动。
+> Model capability = how correct the answer is on a single shot.
 
-### 6.1 什么叫足够具体
+But in automated research or automated optimization systems, what actually matters more is:
 
-典型特征包括：
+> **Whether the model can compress the effective error multiplier below 1.**
 
-- 有清晰目标函数；
-- 有可比较的反馈；
-- 有明确动作面；
-- 有 rollback / keep / discard；
-- 有相对稳定的评估协议；
-- 有一定试错预算。
+### 5.1 Proposal Quality Is the Core
 
-### 6.2 为什么问题太宽时容易失效
+A strong model does not necessarily mean it is always correct on the first round;
+More importantly, a strong model:
 
-如果问题过宽，会出现：
+- Proposes fewer obviously bad proposals;
+- Better utilizes historical evidence;
+- Better compresses broad problems into narrow subproblems;
+- Overfits less on noise;
+- Exhibits less meaningless drift;
+- More easily retains truly effective changes under keep/discard mechanisms.
 
-- reward 模糊；
-- 动作空间无限大；
-- 每轮 proposal 不可比；
-- 局部成功无法累计；
-- 错误定位困难；
-- 模型被噪声牵着走。
+### 5.2 The Advantage of Strong Models Is Not Absolute Correctness, but a Better Chance at Lower Effective Alpha
 
-这时就算模型本身很强，也容易出现：
+More precisely:
 
-- 看起来聪明，但不收敛；
-- 每轮都"有道理"，但没有净进展；
-- breadth 很强，depth 不够。
+> **Under the same task decomposition, same harness, and same feedback conditions, stronger models typically have a better chance of compressing the per-round effective error multiplier lower.**
 
-### 6.3 真正可收敛的问题往往是"压缩过的问题"
+Important caveats:
 
-所以最重要的工程动作之一，不是"直接让模型解决问题"，而是：
+- `alpha` is not a property of the model alone;
+- It is simultaneously influenced by task difficulty, problem decomposition approach, feedback quality, action surface design, and rollback mechanisms;
+- Therefore, "stronger model = lower alpha" is a conditional claim, not a universal law.
 
-> **先把问题压到一个 narrow enough、measurable enough、comparable enough 的子空间。**
+Consequently:
 
-这一步做得越好，系统越可能收敛。
-
-### 6.4 为什么 AI 必须有具体目标才能把事情做成
-
-这一点其实不只是工程经验，也有很强的多 Agent 理论直觉支撑。
-
-如果一个系统没有具体目标、没有统一 reward、没有明确 verifier，那么多个 agent 的协作很容易退化成一种"弱共识问题"：
-
-- 每个 agent 都能提出看起来合理的意见；
-- 但这些意见未必可比较；
-- 没有统一评价面时，系统无法判断谁更接近目标；
-- agent 之间即使在对话层面"达成一致"，也不代表它们对同一个真实目标实现了有效协同。
-
-这和多 Agent 协作里常被借来类比的 **拜占庭将军问题** 很接近：
-
-> **如果系统里没有足够强的共同目标和共同判定机制，那么"大家都在交流"并不等于"大家能可靠达成有用共识"。**
-
-这里可以用两篇工作来做一正一反的参照。
-
-#### 负面边界：*Can AI Agents Agree?*
-这篇工作可以当作一个很好的提醒：
-- 它关注的不是"大家说得像不像"，而是"多 agent 是否真的能稳定达成 agreement"；
-- 结果说明，即使在相对温和的设置里，valid agreement 也并不可靠，而且随着 group size 增大还会进一步恶化；
-- 很多失败不是值被悄悄篡改，而是更朴素的 **liveness** 问题--超时、僵住、迟迟无法收敛。
-
-它提供的是一个负面边界：
-
-> **agreement 并不是多 agent 群体的天然 emergent capability。**
-
-#### 工程方向：*Reaching Agreement Among Reasoning LLM Agents*
-另一篇工作更像工程处方。它的核心意思不是"多 agent 会自己商量出答案"，而是：
-- 现有很多多 agent orchestration 依赖固定轮数、barrier synchronization 之类的 ad-hoc heuristic；
-- 这些方法会浪费计算、被 straggler 拖慢，还可能在"暂时一致"时过早结束；
-- 如果要让 reasoning agents 达成可靠 agreement，就需要把它当成 **protocol 问题** 来设计，而不是当成"多聊几轮"就自然会出现的能力。
-
-换句话说，它强调的是：
-
-> **多 Agent 想从"群聊"升级成"协作系统"，必须先有共同目标，再有共同裁决协议。**
-
-所以，为什么 AI 必须有具体目标才能做成？因为具体目标提供了三个最关键的东西：
-
-#### 1. 共同坐标系
-没有具体目标，每个 agent 都可能在优化不同的隐含目标；有了具体目标，系统至少知道"什么方向算接近"。
-
-#### 2. 可比较的 verdict
-没有统一判定面，agent 之间只能互相说服；有了 verifier / benchmark / gate，系统才能从"辩论"变成"裁决"。
-
-#### 3. 真正的协作基底
-多 Agent 真正的协作，不是互相聊天，而是：
-- 对同一个目标做分工；
-- 用同一套标准验收；
-- 在同一个 control plane 上更新状态。
-
-也就是说：
-
-> **具体目标不是附属品，而是多 Agent 能否从"群聊"升级成"协同系统"的前提。**
-
-换句话说，LLM / Agent 之所以在具体问题上更容易做深，不只是因为问题更窄，更因为：
-
-- 窄目标更容易形成 shared objective；
-- shared objective 更容易形成 shared verifier；
-- shared verifier 才能把多 agent 从"拜占庭式分歧风险"拉回到"可收敛的闭环"。
+- Strong model + few iterations = can still converge quickly;
+- Weak model + many iterations = may barely converge;
+- Very weak model + no matter how many iterations = still diverges.
 
 ---
 
-## 7. Harness 为什么是决定性变量
+## 6. Why "Specific Enough" Is a Necessary Condition
 
-模型能力不是唯一决定因素。很多系统失败，根本不是因为模型太差，而是因为 harness 太差。
+This does not hold for all tasks.
 
-### 7.1 收敛需要四个基础条件
+The depth capability of LLMs typically only truly activates when the problem has been narrowed to "specific enough."
 
-#### 1. 真实反馈（reward fidelity）
-评估必须真实，不能漂。
+### 6.1 What Does Specific Enough Mean
 
-#### 2. keep/discard 必须硬
-没有硬回滚，系统会把噪声错认成进展。
+Typical characteristics include:
 
-#### 3. 动作面要窄
-如果一轮同时乱改 20 个地方，就很难识别因果。
+- A clear objective function;
+- Comparable feedback;
+- A well-defined action surface;
+- Rollback / keep / discard mechanisms;
+- A relatively stable evaluation protocol;
+- A reasonable trial-and-error budget.
 
-#### 4. 要允许足够多次试错
-没有 iteration budget，再好的先验也发挥不出来。
+### 6.2 Why Things Tend to Fail When the Problem Is Too Broad
 
-### 7.2 Harness 的本质作用
+If the problem is too broad, the following issues arise:
 
-Harness 的真正作用是：
+- Reward is ambiguous;
+- Action space is infinitely large;
+- Each round's proposals are not comparable;
+- Local successes cannot accumulate;
+- Error localization is difficult;
+- The model gets dragged around by noise.
 
-- 压缩问题空间；
-- 固定反馈面；
-- 限制动作面；
-- 提供回滚机制；
-- 保证评估口径一致；
-- 让小 edge 可以复利。
+In such cases, even if the model itself is very strong, it is prone to:
 
-所以最终性能更准确的写法应该是：
+- Appearing smart but not converging;
+- Each round "making sense" but producing no net progress;
+- Strong breadth, insufficient depth.
 
-> **effective research performance = model prior × context update × reward fidelity × action narrowing × iteration budget**
+### 6.3 Truly Convergent Problems Are Often "Compressed Problems"
+
+Therefore, one of the most important engineering actions is not "directly letting the model solve the problem," but rather:
+
+> **First compressing the problem to a narrow enough, measurable enough, comparable enough subspace.**
+
+The better this step is done, the more likely the system is to converge.
+
+### 6.4 Why AI Must Have Concrete Objectives to Get Things Done
+
+This point is not just engineering experience; it also has strong multi-agent theoretical intuition behind it.
+
+If a system has no concrete objective, no unified reward, and no clear verifier, then multi-agent collaboration easily degenerates into a form of "weak consensus problem":
+
+- Every agent can propose seemingly reasonable opinions;
+- But these opinions may not be comparable;
+- Without a unified evaluation surface, the system cannot determine who is closer to the objective;
+- Even if agents "reach agreement" at the conversation level, this does not mean they have achieved effective coordination toward the same real objective.
+
+This is closely related to the **Byzantine Generals Problem**, which is often invoked as an analogy in multi-agent collaboration:
+
+> **If the system lacks a sufficiently strong shared objective and shared adjudication mechanism, then "everyone is communicating" does not equal "everyone can reliably reach useful consensus."**
+
+Two papers can serve as positive and negative references here.
+
+#### Negative Boundary: *Can AI Agents Agree?*
+This work serves as an excellent reminder:
+- It focuses not on "whether agents sound alike," but on "whether multiple agents can reliably achieve stable agreement";
+- The results show that even in relatively benign settings, valid agreement is not reliable, and further degrades as group size increases;
+- Many failures are not due to values being silently tampered with, but rather more mundane **liveness** problems -- timeouts, deadlocks, inability to converge in time.
+
+It provides a negative boundary:
+
+> **Agreement is not a natural emergent capability of multi-agent groups.**
+
+#### Engineering Direction: *Reaching Agreement Among Reasoning LLM Agents*
+This other work is more like an engineering prescription. Its core message is not "multiple agents will naturally discuss their way to an answer," but rather:
+- Many existing multi-agent orchestration systems rely on fixed round counts, barrier synchronization, and other ad-hoc heuristics;
+- These methods waste compute, get slowed down by stragglers, and may terminate prematurely when there is only temporary agreement;
+- If reasoning agents are to achieve reliable agreement, it must be treated as a **protocol design problem**, not as a capability that naturally emerges from "chatting a few more rounds."
+
+In other words, it emphasizes:
+
+> **For multi-agent systems to upgrade from "group chat" to "collaborative system," there must first be a shared objective, then a shared adjudication protocol.**
+
+So, why must AI have concrete objectives to succeed? Because concrete objectives provide three critical things:
+
+#### 1. A Shared Coordinate System
+Without concrete objectives, each agent may be optimizing different implicit objectives; with concrete objectives, the system at least knows "which direction counts as closer."
+
+#### 2. Comparable Verdicts
+Without a unified adjudication surface, agents can only try to persuade each other; with a verifier / benchmark / gate, the system can shift from "debate" to "adjudication."
+
+#### 3. A True Collaboration Foundation
+True multi-agent collaboration is not chatting with each other, but rather:
+- Dividing labor toward the same objective;
+- Using the same standards for acceptance;
+- Updating state on the same control plane.
+
+That is to say:
+
+> **Concrete objectives are not an accessory, but a prerequisite for multi-agent systems to upgrade from "group chat" to "collaborative system."**
+
+In other words, the reason LLMs / agents find it easier to achieve depth on specific problems is not only because the problem is narrower, but also because:
+
+- Narrow objectives more easily form a shared objective;
+- A shared objective more easily forms a shared verifier;
+- A shared verifier is what pulls multi-agent systems back from "Byzantine disagreement risk" to "a convergent closed loop."
 
 ---
 
-## 8. 为什么这像 "PID + 随机方向优化 + 薄 RL"
+## 7. Why the Harness Is the Decisive Variable
 
-这不是严格数学定义，也不是说它与这些框架理论等价；这里的用法主要是：
+Model capability is not the only determining factor. Many systems fail not because the model is too weak, but because the harness is too poor.
 
-> **借这些框架的工程直觉，帮助理解它在 feedback、search、update 三个层面分别像什么。**
+### 7.1 Convergence Requires Four Foundational Conditions
 
-### 8.1 像 PID 的地方
+#### 1. Real Feedback (Reward Fidelity)
+Evaluation must be truthful and must not drift.
 
-- 当前差太多 → 加力度
-- 过头了 → 减力度
-- 趋势不好 → 换方向
-- 炸了 → 回退
+#### 2. Keep/Discard Must Be Hard
+Without hard rollback, the system will mistake noise for progress.
 
-#### 直觉映射
+#### 3. The Action Surface Must Be Narrow
+If one round makes changes to 20 things simultaneously, it becomes very difficult to identify causality.
 
-- P：当前误差驱动当前动作
-- I：历史结果累积成经验记忆
-- D：趋势变化影响下轮 proposal
+#### 4. Sufficient Trial-and-Error Must Be Allowed
+Without iteration budget, even the best priors cannot be leveraged.
 
-当然它不是经典 PID，因为：
+### 7.2 The Essential Role of the Harness
 
-- 状态不是连续低维；
-- 动作不是单个连续变量；
-- 控制器本身是语言模型；
-- 系统高度非线性。
+The true role of the harness is to:
 
-但"feedback controller 的手感"是完全成立的。
+- Compress the problem space;
+- Fix the feedback surface;
+- Constrain the action surface;
+- Provide rollback mechanisms;
+- Ensure evaluation consistency;
+- Allow small edges to compound.
 
-### 8.2 像随机方向优化的地方
+Therefore, a more accurate expression for final performance should be:
 
-它没有真梯度。
+> **effective research performance = model prior x context update x reward fidelity x action narrowing x iteration budget**
 
-它做的是：
+---
 
-- 猜一个方向；
-- 试一下；
-- 看 reward；
-- 好就保留；
-- 差就丢掉。
+## 8. Why This Resembles "PID + Random Direction Optimization + Thin RL"
 
-这和：
+This is not a rigorous mathematical definition, nor does it claim theoretical equivalence with these frameworks; the usage here is primarily:
+
+> **Borrowing the engineering intuitions of these frameworks to help understand what the system resembles at the feedback, search, and update layers respectively.**
+
+### 8.1 Where It Resembles PID
+
+- Current error too large -> increase effort
+- Overshot -> reduce effort
+- Trend is bad -> change direction
+- Crashed -> roll back
+
+#### Intuitive Mapping
+
+- P: Current error drives current action
+- I: Historical results accumulate as experiential memory
+- D: Trend changes influence the next-round proposal
+
+Of course, it is not classical PID, because:
+
+- The state is not continuous and low-dimensional;
+- The action is not a single continuous variable;
+- The controller itself is a language model;
+- The system is highly nonlinear.
+
+But "the feel of a feedback controller" absolutely holds.
+
+### 8.2 Where It Resembles Random Direction Optimization
+
+It has no true gradient.
+
+What it does is:
+
+- Guess a direction;
+- Try it;
+- Look at the reward;
+- Keep it if it's good;
+- Discard it if it's bad.
+
+This is highly similar to:
 
 - hill climbing
 - direct search
 - bandit exploration
 - stochastic search
 
-高度相似。
+The key difference is:
 
-不同点在于：
+> **The proposal is not random noise, but a high-quality direction with semantic priors.**
 
-> **proposal 不是随机噪声，而是带语义先验的高质量方向。**
+### 8.3 Where It Resembles "1-Batch PPO / Extremely Thin RL"
 
-### 8.3 像 "1-batch PPO / 极薄 RL" 的地方
+The intuition is:
 
-用户的直觉是：
+- Each round is like having only one or very few interactions;
+- The policy adjusts based on results;
+- Reward is sparse but clear;
+- Continuous iteration leads to overall convergence.
 
-- 每轮就像只拿一次或极少量交互；
-- policy 根据结果调整；
-- reward 稀疏但明确；
-- 不断迭代后整体收敛。
-
-严格说它不是标准 PPO，因为缺少：
+Strictly speaking, it is not standard PPO, because it lacks:
 
 - clipping objective
 - old/new policy ratio
@@ -503,372 +501,372 @@ Harness 的真正作用是：
 - advantage estimator
 - mini-batch gradient update
 
-但作为工程直觉，它确实很像：
+But as engineering intuition, it does very much resemble:
 
 > **LLM proposal policy + single-trial reward + keep/discard update**
 
 ---
 
-## 9. 为什么 context 很像贝叶斯，而这点非常重要
+## 9. Why Context Closely Resembles Bayesian Inference, and Why This Matters
 
-用户提到一个关键判断：
+A key observation:
 
-> **LLM 的 context 本身就是个贝叶斯。**
+> **The LLM's context itself is essentially Bayesian.**
 
-这句话很值得展开。
+This statement is worth unpacking.
 
-### 9.1 为什么这个类比成立
+### 9.1 Why This Analogy Holds
 
-因为上下文的作用就是在重加权模型当前最可能输出的方向：
+Because the role of context is to re-weight the directions the model is most likely to output:
 
-- 最近哪些尝试失败了；
-- 哪些方向有效；
-- 什么约束不能碰；
-- 当前任务到底是在优化什么；
-- 哪些解释现在更可信。
+- Which recent attempts failed;
+- Which directions were effective;
+- Which constraints must not be violated;
+- What the current task is actually optimizing;
+- Which explanations are now more credible.
 
-每增加一段 evidence，模型当前的 proposal 分布都会变化。
+With each additional piece of evidence, the model's current proposal distribution shifts.
 
-### 9.2 这解释了为什么 LLM 比随机强很多
+### 9.2 This Explains Why LLMs Are Much Stronger Than Random
 
-随机搜索没有上下文后验更新。
+Random search has no in-context posterior updating.
 
-但 LLM 有：
+But LLMs have:
 
-- 强先验；
-- 即时 evidence 注入；
-- 上下文条件化；
-- 可在下一轮立刻修正 proposal。
+- Strong priors;
+- Immediate evidence injection;
+- Contextual conditioning;
+- The ability to immediately correct proposals in the next round.
 
-也就是说，它的强项不是"永远正确"，而是：
+That is to say, their strength is not "always being correct," but rather:
 
-> **能根据证据快速改变自己接下来试什么。**
+> **Being able to rapidly change what they try next based on evidence.**
 
-而这正是 iterative system 最需要的能力。
-
----
-
-## 10. 迭代次数为什么如此关键
-
-模型能力再强，也不是一次完成。
-
-真正的效果来自：
-
-> **proposal quality × number of iterations**
-
-### 10.1 迭代的意义不是重复，而是复利
-
-每一轮迭代都可能带来：
-
-- 更小的错误空间；
-- 更稳定的局部结构；
-- 更清晰的失败边界；
-- 更高质量的下一轮 proposal；
-- 更少的无效探索。
-
-如果每轮都能把误差压一点点，那么长期就会非常强。
-
-### 10.2 为什么强模型可以少迭代也收敛
-
-如果模型强，`alpha` 更低：
-
-- proposal 更准；
-- evidence 利用更好；
-- rollback 更及时；
-- 无效探索更少。
-
-这就意味着：
-
-> **强模型可以用更少的试验次数，获得同样甚至更强的收敛。**
-
-### 10.3 为什么弱模型严重依赖大量迭代
-
-如果模型弱：
-
-- proposal 边际优势小；
-- drift 更大；
-- 更容易卡噪声；
-- 更难把问题切窄；
-- `alpha` 接近 1，甚至大于 1。
-
-这时迭代就像"硬磨"：
-
-- 运气好能磨出一点收敛；
-- 运气不好越磨越偏。
+And this is precisely the capability that iterative systems need most.
 
 ---
 
-## 11. 什么时候会失败：发散的典型模式
+## 10. Why the Number of Iterations Is So Critical
 
-如果系统出现下面这些情况，往往会发散：
+No matter how strong the model is, it cannot finish in one shot.
 
-### 11.1 reward 漂移
-模型优化的是假目标，不是实际目标。
+The real effect comes from:
 
-### 11.2 动作面过宽
-一轮改动太多，无法判断因果。
+> **proposal quality x number of iterations**
 
-### 11.3 keep/discard 太软
-什么都能解释为"有一点帮助"，导致噪声累积。
+### 10.1 The Significance of Iteration Is Not Repetition, but Compounding
 
-### 11.4 证据写不回系统
-上下文没有稳定积累，后验更新失败。
+Each iteration can bring:
 
-### 11.5 任务不够 specific
-目标模糊，导致 proposal 看似聪明却不可比较。
+- A smaller error space;
+- More stable local structure;
+- Clearer failure boundaries;
+- Higher-quality next-round proposals;
+- Less wasted exploration.
 
-### 11.6 评估成本太高，迭代太少
-再好的 proposal 也来不及复利。
+If each round compresses the error just a little, the long-term effect is very powerful.
 
-这些情况下，哪怕模型看起来"很聪明"，依然可能：
+### 10.2 Why Strong Models Can Converge with Fewer Iterations
 
-- 输出很多合理解释；
-- 产出很多内容；
-- 却没有真正压缩误差。
+If the model is strong, `alpha` is lower:
 
-也就是说：
+- Proposals are more accurate;
+- Evidence utilization is better;
+- Rollback is more timely;
+- Wasted exploration is less.
 
-> **看起来像在工作，不等于在收敛。**
+This means:
+
+> **Strong models can achieve the same or even stronger convergence with fewer trials.**
+
+### 10.3 Why Weak Models Heavily Depend on Massive Iteration
+
+If the model is weak:
+
+- Proposal marginal advantage is small;
+- Drift is larger;
+- More likely to get stuck on noise;
+- Harder to narrow the problem;
+- `alpha` is close to 1, or even greater than 1.
+
+In such cases, iteration becomes "grinding":
+
+- With luck, some convergence can be ground out;
+- Without luck, the more you grind, the more you drift.
 
 ---
 
-## 12. 对自动化研究系统的设计启发
+## 11. When Things Fail: Typical Divergence Patterns
 
-如果把这些判断转成系统设计原则，可以得到以下结论。
+If the system exhibits the following conditions, it tends to diverge:
 
-### 12.1 不要把 agent 当作一次性回答器
+### 11.1 Reward Drift
+The model is optimizing a false objective, not the actual objective.
 
-应该把它设计成：
+### 11.2 Action Surface Too Wide
+One round changes too many things, making it impossible to identify causality.
+
+### 11.3 Keep/Discard Too Soft
+Everything can be explained as "somewhat helpful," leading to noise accumulation.
+
+### 11.4 Evidence Cannot Be Written Back to the System
+Context does not accumulate stably, causing posterior update failure.
+
+### 11.5 Task Not Specific Enough
+Vague objectives cause proposals that look smart but are not comparable.
+
+### 11.6 Evaluation Cost Too High, Too Few Iterations
+Even the best proposals cannot compound.
+
+Under these conditions, even if the model appears "very smart," it may still:
+
+- Output many reasonable explanations;
+- Produce a great deal of content;
+- Yet never truly compress the error.
+
+That is to say:
+
+> **Looking like it's working does not mean it's converging.**
+
+---
+
+## 12. Design Implications for Automated Research Systems
+
+If we translate these insights into system design principles, we arrive at the following conclusions.
+
+### 12.1 Do Not Treat the Agent as a One-Shot Answering Machine
+
+It should be designed as:
 
 - proposal generator
 - evidence consumer
 - iterative controller
 - keep/discard participant
 
-### 12.2 不要先追求"大而全"
+### 12.2 Do Not Pursue "Comprehensive Coverage" First
 
-应该优先追求：
+Priority should be given to:
 
 - very specific target
 - stable feedback surface
 - narrow action surface
 - high iteration frequency
 
-### 12.3 不要让 raw signal 直接变 Boss 结论
+### 12.3 Do Not Let Raw Signals Directly Become Boss-Level Conclusions
 
-因为 raw signal 只是 proposal 的一部分，不是 verified verdict。
+Because raw signals are only part of the proposal, not a verified verdict.
 
-### 12.4 真正重要的是闭环，不是单步 brilliance
+### 12.4 What Truly Matters Is the Closed Loop, Not Single-Step Brilliance
 
-系统是否能工作，不主要看"模型一句话有多惊艳"，而主要看：
+Whether a system works depends not primarily on "how brilliant a single model output is," but on:
 
-- proposal 能否进入真实环境；
-- 结果能否被比较；
-- 错误能否被回滚；
-- 好的方向能否被保留；
-- evidence 能否进入下一轮。
+- Whether proposals can enter the real environment;
+- Whether results can be compared;
+- Whether errors can be rolled back;
+- Whether good directions can be preserved;
+- Whether evidence can enter the next round.
 
-### 12.5 用现有自动化科研项目做一个范式地图
+### 12.5 A Paradigm Map Using Existing Automated Research Projects
 
-如果把最近这一波自动化科研项目放在一起看，会发现它们大多还是同一个大范式的不同展开：
+If we look at the recent wave of automated research projects together, most of them are still different instantiations of the same overarching paradigm:
 
 ```text
 proposal -> run -> evaluate -> keep/discard -> iterate
 ```
 
-真正的差异，不在于它们是否"自动"，而在于它们分别强化了哪一层。
+The real differences lie not in whether they are "automated," but in which layer they respectively strengthen.
 
-#### [AutoResearch](https://github.com/karpathy/autoresearch)（Karpathy, 2026）：单轨局部优化器
-- 把问题压到极窄的实验面上；
-- 用固定时间预算做小步试错；
-- 沿着单条主线持续优化指标；
-- 非常擅长在 specific objective 上快速收敛。
+#### [AutoResearch](https://github.com/karpathy/autoresearch) (Karpathy, 2026): Single-Track Local Optimizer
+- Compresses the problem to an extremely narrow experimental surface;
+- Uses a fixed time budget for small-step trial and error;
+- Continuously optimizes metrics along a single main thread;
+- Excels at fast convergence on specific objectives.
 
-它的长板是收敛速度，短板是更容易陷入局部最优。
+Its strength is convergence speed; its weakness is a higher tendency to get stuck in local optima.
 
-#### [AutoResearchClaw](https://github.com/aiming-lab/AutoResearchClaw)（AIMing Lab）：端到端流水线 + 多 batch 搜索
-- 从文献发现、假设生成到实验和写论文全链路覆盖；
-- 通过多智能体辩论、多候选假设、多轮审查来降低单一路径偏见；
-- 本质上不只是"往前走"，而是在防止系统过早卡在局部最优。
+#### [AutoResearchClaw](https://github.com/aiming-lab/AutoResearchClaw) (AIMing Lab): End-to-End Pipeline + Multi-Batch Search
+- Covers the full chain from literature discovery, hypothesis generation, to experiments and paper writing;
+- Uses multi-agent debate, multiple candidate hypotheses, and multi-round review to reduce single-path bias;
+- Essentially, it is not just about "moving forward," but about preventing the system from prematurely getting stuck in local optima.
 
-它的长板是全流程和多分支探索，短板是系统更重、环节更多，因而更依赖全链路的反馈质量。
+Its strength is full-pipeline coverage and multi-branch exploration; its weakness is greater system weight and more components, thus higher dependence on end-to-end feedback quality.
 
-#### [EvoScientist](https://github.com/EvoScientist/EvoScientist)：实验笔记本 + 经验抽象器
-- 不只是试错，还把失败策略、无效方向和可复用教训写进记忆库；
-- 再把这些经验喂回下一轮 proposal；
-- 相当于给 AI 配了一套实验 notebook，并让它自己读笔记、自己长记性。
+#### [EvoScientist](https://github.com/EvoScientist/EvoScientist): Experimental Notebook + Experience Abstractor
+- Not just trial and error, but also writes failed strategies, ineffective directions, and reusable lessons into a memory bank;
+- Then feeds this experience back into the next-round proposals;
+- Essentially equips the AI with an experimental notebook, and lets it read its own notes and build institutional memory.
 
-它的长板是跨轮次、跨项目的经验积累，短板是记忆如果抽象不好，容易把噪声当成经验传播。
+Its strength is cross-round, cross-project experience accumulation; its weakness is that if memory abstraction is done poorly, noise can be propagated as experience.
 
-#### ARIS / Orchestra / Research-Claw：技能层与工具层
-- 它们不一定自己包办整条 pipeline；
-- 更像是在给 agent 补 Skills、MCP、Tooling、文献与实验能力；
-- 解决的是"agent 有什么手、有多少工具、能不能即插即用"的问题。
+#### ARIS / Orchestra / Research-Claw: Skill Layer and Tool Layer
+- They do not necessarily handle the entire pipeline themselves;
+- They are more like augmenting agents with Skills, MCP, Tooling, literature, and experimental capabilities;
+- They address the question of "what hands does the agent have, how many tools, and can they plug and play."
 
-它们的价值在于抬高基础设施上限，但单靠技能包并不自动等于深度收敛。
+Their value lies in raising the infrastructure ceiling, but skill packages alone do not automatically equal depth convergence.
 
-#### Dr. Claw：研究 IDE / 工作台
-- 更强调人机协同、多项目管理和可视化监督；
-- 不是极端无人值守，而是让 AI 负责脏活累活，人类负责科研品味和方向把关。
+#### Dr. Claw: Research IDE / Workbench
+- Places greater emphasis on human-AI collaboration, multi-project management, and visual supervision;
+- Not extreme unattended autonomy, but rather letting AI handle the grunt work while humans maintain research taste and directional oversight.
 
-它的长板是产品体验与多项目管理，短板是自主深度不一定最强。
+Its strength is product experience and multi-project management; its weakness is that autonomous depth may not be the strongest.
 
-所以如果把这些路线再压一层，可以得到一个更清楚的判断：
+So if we compress these trajectories one more level, we arrive at a clearer conclusion:
 
-> **自动化科研赛道并不是"谁最自动"，而是"谁把某一层做得最强"：有人强化单轨收敛，有人强化多分支搜索，有人强化记忆进化，有人强化技能基础设施，有人强化人机协同工作台。**
+> **The automated research landscape is not about "who is most automated," but about "who makes which layer the strongest": some strengthen single-track convergence, some strengthen multi-branch search, some strengthen memory evolution, some strengthen skill infrastructure, and some strengthen the human-AI collaboration workbench.**
 
-### 12.6 真正的问题：怎么把一个具体项目或研究做深做好
+### 12.6 The Real Question: How to Achieve Depth on a Specific Project or Research Problem
 
-如果说上面那些项目大多已经把同一个大范式演了很多遍，那么下一步真正拉开差距的，就不是"再把链条拉长"，而是：
+If the projects above have already demonstrated the same overarching paradigm many times, then the next differentiator is not "extending the chain further," but rather:
 
-> **怎么把某一个具体项目、某一个具体 research surface，做深、做稳、做出净增益。**
+> **How to achieve depth, stability, and net gains on a specific project, a specific research surface.**
 
-我认为这里至少有六个关键条件。
+I believe there are at least six key conditions here.
 
-#### 1. 先把问题切到可收敛面
-不要直接追求"自动做科研"或"从 idea 到 paper 全自动"，而要先压成：
-- 一个可比较的目标；
-- 一个可验证的任务面；
-- 一个单轮动作可归因的局部子问题。
+#### 1. First, Narrow the Problem to a Convergent Surface
+Do not directly pursue "automated research" or "fully automated from idea to paper"; instead, first compress to:
+- A comparable objective;
+- A verifiable task surface;
+- A local subproblem where single-round actions can be attributed.
 
-depth 的前提不是"大"，而是"窄到可以收敛"。
+The prerequisite for depth is not "big," but "narrow enough to converge."
 
-#### 2. 把反馈做硬
-没有硬反馈，就没有真 depth。
-必须尽量让系统面对的是：
-- 数值指标；
-- 结构化 verifier verdict；
-- 明确的 keep/discard gate；
-- 可复现、可回滚的评估协议。
+#### 2. Make Feedback Hard
+Without hard feedback, there is no real depth.
+The system must face, as much as possible:
+- Numerical metrics;
+- Structured verifier verdicts;
+- Clear keep/discard gates;
+- Reproducible, rollback-capable evaluation protocols.
 
-否则系统只是在输出很多看起来合理的内容，并不一定真的在进步。
+Otherwise, the system is merely outputting a large amount of seemingly reasonable content, without necessarily making real progress.
 
-#### 3. 把 proposal 质量做高
-proposal 质量来自三部分：
-- 更强的模型；
-- 更干净的上下文组织；
-- 更好的 proposal contract。
+#### 3. Maximize Proposal Quality
+Proposal quality comes from three parts:
+- A stronger model;
+- Cleaner context organization;
+- A better proposal contract.
 
-也就是说，depth 不是只靠模型堆出来的，而是：
+That is to say, depth is not achieved by model capability alone, but by:
 
-> **模型 × context × proposal 模板**
+> **model x context x proposal template**
 
-共同决定的。
+working together.
 
-#### 4. 把状态管理做干净
-真正的 depth 依赖于三种状态的分离：
-- working state：当前正在试什么；
-- best-known state：当前最优解是什么；
-- knowledge state：系统真正学到了什么。
+#### 4. Keep State Management Clean
+True depth depends on the separation of three types of state:
+- working state: what is currently being tried;
+- best-known state: what the current best solution is;
+- knowledge state: what the system has truly learned.
 
-如果这三者混在一起，系统很容易把噪声试验写成长期真知识，或者让工作状态污染最佳状态。
+If these three are mixed together, the system easily writes noisy experiments as long-term ground truth, or lets working state pollute the best-known state.
 
-#### 5. 用 breadth 找坡，用 depth 下钻
-真实研究不是 breadth 和 depth 二选一。
-更常见的模式是：
-- 前期并行探索多个方向，避免一开始就在错的坡上优化；
-- 中后期锁定 promising branch，沿单条主线深挖收敛。
+#### 5. Use Breadth to Find the Slope, Use Depth to Drill Down
+Real research is not a binary choice between breadth and depth.
+The more common pattern is:
+- In early stages, explore multiple directions in parallel to avoid optimizing on the wrong slope from the start;
+- In mid-to-late stages, lock onto a promising branch and drill deep along a single main thread for convergence.
 
-也就是说：
+That is to say:
 
-> **breadth 用来找面，depth 用来打穿。**
+> **Breadth is for finding the surface; depth is for breaking through.**
 
-#### 6. verifier 比 generator 更重要
-很多系统都在堆 generator，但真正决定系统能否做深的，经常是 verifier、gate、reviewer、rollback。
+#### 6. Verifiers Are More Important Than Generators
+Many systems focus on stacking generators, but what truly determines whether a system can achieve depth is often the verifier, gate, reviewer, and rollback.
 
-因为真正的护城河不是"能不能生成更多东西"，而是：
-- 什么算进步；
-- 什么是噪声；
-- 什么必须丢掉；
-- 什么可以进入下一轮；
-- 什么只是代理目标，不是真目标。
+Because the real moat is not "whether more things can be generated," but rather:
+- What counts as progress;
+- What is noise;
+- What must be discarded;
+- What can enter the next round;
+- What is merely a proxy objective, not the real objective.
 
-所以最后真正该追求的，不是"模型更会说"，而是：
+So what should ultimately be pursued is not "a model that talks better," but rather:
 
-> **把系统变成一个能在窄问题面上持续压缩误差的机器。**
+> **Turning the system into a machine that continuously compresses error on a narrow problem surface.**
 
-### 12.7 一句总括
+### 12.7 A One-Line Summary
 
-如果把这一节压成一句话，就是：
+If this entire section is compressed into one sentence, it is:
 
-> **自动化科研的下一阶段，不是谁把链条做得更长，而是谁能把某一个具体 research surface 做出真正的深度收敛。**
+> **The next phase of automated research is not about who makes the chain longer, but about who can achieve true depth convergence on a specific research surface.**
 
 ---
 
-## 13. 一个更完整的总公式
+## 13. A More Complete Summary Formula
 
-如果要把全文压成一条工程表达，可以写成：
+If the entire article is compressed into a single engineering expression, it can be written as:
 
-> **LLM research depth ≈ Proposal quality × Contextual posterior update × Reward fidelity × Action narrowing × Iteration budget**
+> **LLM research depth ~ Proposal quality x Contextual posterior update x Reward fidelity x Action narrowing x Iteration budget**
 
-而它能否真正收敛，则可以用误差乘子来判断：
+And whether it can truly converge can be assessed using the error multiplier:
 
 ```text
 d_(t+1) = alpha * d_t
 ```
 
-其中 `alpha` 不是模型单独决定的，而是由以下共同决定：
+Where `alpha` is not determined by the model alone, but is jointly determined by:
 
-- 模型能力
-- 问题是否足够 specific
-- harness 是否可靠
-- feedback 是否真实
-- keep/discard 是否硬
-- 迭代次数是否足够
+- Model capability
+- Whether the problem is specific enough
+- Whether the harness is reliable
+- Whether the feedback is truthful
+- Whether keep/discard is hard
+- Whether the iteration count is sufficient
 
-最终判断可以粗粒度地理解为：
+The final assessment can be coarsely understood as:
 
-- `alpha < 1`：系统更像在收敛
-- `alpha = 1`：系统更像在停滞
-- `alpha > 1`：系统更像在发散
-
----
-
-## 14. 限制条件与反例
-
-为了避免把上面的框架说得过头，这里补几条明确边界。
-
-### 14.1 这不是普适收敛定理
-
-文中的 `alpha` 模型只是一个帮助思考的工程类比，不代表真实系统一定存在单一、稳定、可观测的误差标量，也不代表复杂研究过程一定能被单个乘法模型准确描述。
-
-### 14.2 "模型强"不等于一定收敛
-
-更强的模型，通常只是在**相同任务切分、相同 harness、相同反馈质量**下，更有机会给出更低的有效误差乘子；如果 reward 漂了、动作面太宽、评估协议不稳，那么再强的模型也可能沿着错误目标更快地"收敛"。
-
-### 14.3 一个典型反例：优化代理目标而不是真目标
-
-例如，一个 agent 在代码修复任务中持续优化"单元测试通过率"，而测试集覆盖并不完整；这时系统可能每轮都比随机更好、看起来也在不断进步，但它收敛的是**代理目标**，不是真实目标。也就是说：
-
-> **高于随机 + 可以迭代，并不自动等于有用收敛。**
-
-### 14.4 breadth 和 depth 在真实研究里常常交替出现
-
-本文强调的是：LLM 在 **depth 阶段** 的能力容易被低估。
-这不意味着 breadth 不重要，也不意味着真实研究只靠 depth。真实流程往往更像：
-
-- 先 broad exploration 找方向
-- 再 deep exploitation 做收敛
-- 必要时再回到 broad exploration 重新找面
-
-所以这篇文档不是要证明"depth > breadth"，而是要说明：
-
-> **在一个被切得足够窄、反馈足够硬的问题面上，LLM 的 depth 能力可能非常强。**
+- `alpha < 1`: The system is more likely converging
+- `alpha = 1`: The system is more likely stagnating
+- `alpha > 1`: The system is more likely diverging
 
 ---
 
-## 15. 最终结论
+## 14. Limitations and Counterexamples
 
-本文最终想表达的是：
+To avoid overstating the framework above, here are several explicit boundary conditions.
 
-1. **LLM 在研究上的真正强项，往往是 depth，不是 breadth。**
-2. **这种 depth 能力依赖"问题足够具体"而不是"世界足够宽"。**
-3. **LLM 不是随机搜索器，而是带强先验与上下文后验更新的 proposal engine。**
-4. **当 proposal quality 明显高于随机，并且 harness 同时提供 keep/discard、rollback、稳定反馈与足够迭代预算时，系统更有可能表现出显著收敛性。**
-5. **模型能力的工程意义，不只是答得更聪明，而是在合适问题切分与合适 harness 下，更有机会把每轮有效误差缩放系数 `alpha` 压得更低。**
-6. **模型越强，通常所需迭代次数越少；模型越弱，就越依赖大量迭代，甚至可能始终无法进入真正收敛区。**
-7. **真正可用的自动化研究，不是"让 LLM 想一想"，而是把 LLM 放进一个可以持续压缩误差的闭环里。**
+### 14.1 This Is Not a Universal Convergence Theorem
 
-因此，可以把整个结论压成一句话：
+The `alpha` model in this article is merely an engineering analogy to aid thinking. It does not imply that real systems necessarily possess a single, stable, observable error scalar, nor that complex research processes can necessarily be accurately described by a single multiplicative model.
 
-> **自动化研究能力，不是一次性聪明，而是高质量 proposal 在 specific task 上通过真实反馈和大量迭代持续逼近目标的能力。**
+### 14.2 "Strong Model" Does Not Guarantee Convergence
+
+A stronger model typically only has a better chance of producing a lower effective error multiplier **under the same task decomposition, same harness, and same feedback quality**; if the reward drifts, the action surface is too wide, or the evaluation protocol is unstable, then even the strongest model may "converge" faster toward the wrong objective.
+
+### 14.3 A Typical Counterexample: Optimizing a Proxy Objective Instead of the Real Objective
+
+For example, an agent in a code repair task continuously optimizes "unit test pass rate," but the test suite's coverage is incomplete; in this case, the system may be better than random each round and appear to be making continuous progress, yet what it converges to is a **proxy objective**, not the real objective. That is to say:
+
+> **Better than random + ability to iterate does not automatically equal useful convergence.**
+
+### 14.4 Breadth and Depth Often Alternate in Real Research
+
+This article emphasizes that LLM capability in the **depth phase** tends to be underestimated.
+This does not mean breadth is unimportant, nor that real research relies solely on depth. Real workflows often look more like:
+
+- First, broad exploration to find directions
+- Then, deep exploitation to achieve convergence
+- When necessary, return to broad exploration to find new surfaces
+
+So this article is not trying to prove "depth > breadth," but rather to demonstrate:
+
+> **On a problem surface that has been narrowed sufficiently and where feedback is sufficiently hard, the depth capability of LLMs can be remarkably strong.**
+
+---
+
+## 15. Final Conclusions
+
+What this article ultimately aims to convey is:
+
+1. **The true strength of LLMs in research is often depth, not breadth.**
+2. **This depth capability depends on "the problem being specific enough" rather than "the world being wide enough."**
+3. **LLMs are not random search engines, but proposal engines with strong priors and in-context posterior updating.**
+4. **When proposal quality is significantly above random, and the harness simultaneously provides keep/discard, rollback, stable feedback, and sufficient iteration budget, the system is more likely to exhibit significant convergence.**
+5. **The engineering significance of model capability is not just smarter answers, but rather, under appropriate problem decomposition and appropriate harness, a better chance of compressing the per-round effective error scaling factor `alpha` lower.**
+6. **The stronger the model, the fewer iterations typically required; the weaker the model, the more it depends on massive iteration, and it may never enter the true convergence zone.**
+7. **Truly usable automated research is not "letting the LLM think about it," but placing the LLM inside a closed loop that can continuously compress error.**
+
+Therefore, the entire conclusion can be compressed into one sentence:
+
+> **Automated research capability is not one-shot brilliance, but the ability of high-quality proposals to continuously converge toward the objective through real feedback and extensive iteration on a specific task.**

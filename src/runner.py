@@ -69,6 +69,30 @@ class InnerRunner:
         # Set by InnerLoopController before each cycle; used for artifact path namespacing
         self.outer_cycle: int = 0
 
+    def inject_stage(self, stage: "BaseStage", inject_after: str) -> None:
+        """Insert a generated stage into the pipeline after the named stage.
+
+        Called by MechanismResearcher.validate() before running the inner loop
+        with an experimental mechanism. The injection is permanent for this runner
+        instance — clone the runner if you need a clean baseline.
+
+        Args:
+            stage:        Instantiated stage to inject (must implement BaseStage).
+            inject_after: Name of the existing stage to inject after.
+
+        Raises:
+            ValueError: if inject_after does not match any stage in the pipeline.
+        """
+        for i, s in enumerate(self.stages):
+            if s.name == inject_after:
+                self.stages.insert(i + 1, stage)
+                logger.info(f"Injected stage '{stage.name}' after '{inject_after}'")
+                return
+        raise ValueError(
+            f"Stage '{inject_after}' not found in pipeline. "
+            f"Available: {[s.name for s in self.stages]}"
+        )
+
     def run_once(self, inner_state: InnerLoopState) -> RunResult:
         """Execute one full pipeline pass. Updates inner_state and returns RunResult."""
         run_num = len(inner_state.run_trace) + 1
