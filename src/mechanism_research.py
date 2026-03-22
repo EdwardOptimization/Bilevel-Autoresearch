@@ -148,7 +148,11 @@ class YourStage(BaseStage):
         # context keys available:
         #   context["article_id"]          str
         #   context["article_content"]     str  — current article text
-        #   context["previous_outputs"]    dict — stage_name -> output str
+        #   context["previous_outputs"]    dict[str, str] — stage_name -> output STRING
+        #       IMPORTANT: values are plain strings, NOT dicts. To read
+        #       the output of a previous stage, use:
+        #           text = context["previous_outputs"].get("stage_name", "")
+        #       Then parse the text yourself if you need structured data.
         #   context["retrieved_lessons"]   str  — inner lessons/skills
         #   context["outer_guidance"]      dict — outer loop overrides
         #   context["evaluator_feedback"]  str  — quality gate feedback (may be empty)
