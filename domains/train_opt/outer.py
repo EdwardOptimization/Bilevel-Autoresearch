@@ -198,10 +198,23 @@ class TrainOuterLoop:
             if old != new_strategy:
                 logger.info(f"[Outer] Strategy: {old} → {new_strategy}")
 
-        # Freeze params
+        # Freeze params (Improvement 17: limit to max 5 new freezes per cycle,
+        # and ensure at least 4 params remain active)
+        MAX_FREEZE_PER_CYCLE = 5
+        MIN_ACTIVE_PARAMS = 4
+        freeze_count = 0
         for p in analysis.get("freeze_params", []):
+            if freeze_count >= MAX_FREEZE_PER_CYCLE:
+                logger.info(f"[Outer] Freeze limit reached ({MAX_FREEZE_PER_CYCLE}), skipping freeze of {p}")
+                break
+            # Ensure minimum active params remain
+            current_active = len(config.active_params)
+            if current_active <= MIN_ACTIVE_PARAMS:
+                logger.info(f"[Outer] Only {current_active} active params remain, skipping freeze of {p}")
+                break
             if p in config.editable_params and p not in config.frozen_params:
                 config.frozen_params.append(p)
+                freeze_count += 1
                 logger.info(f"[Outer] Frozen: {p}")
 
         # Unfreeze params
