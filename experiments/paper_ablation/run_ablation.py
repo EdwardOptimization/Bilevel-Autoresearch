@@ -610,9 +610,15 @@ def _load_runner_module(runner_py: Path):
     module = importlib.util.module_from_spec(spec)
 
     # Pre-populate sys.modules with project root so relative imports work
-    sys.path_hooks  # ensure sys.path is active
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
+
+    # Pre-load core modules into sys.modules so dynamic import reuses them
+    # without this, exec_module re-imports core.llm_client which fails if
+    # openai is only available in the conda env (not system python)
+    import core.llm_client  # noqa: F811
+    import core.pipeline.base  # noqa: F811
+    import domains.train_opt.config  # noqa: F811
 
     # Fix relative imports for dynamically loaded runner copies
     code = runner_py.read_text(encoding="utf-8")
@@ -626,6 +632,10 @@ def _load_runner_module(runner_py: Path):
         )
         module = importlib.util.module_from_spec(spec)
 
+    # Register module in sys.modules BEFORE exec — @dataclass and other
+    # decorators look up cls.__module__ in sys.modules during class creation.
+    # Without this, sys.modules.get(module_name) returns None → crash.
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
