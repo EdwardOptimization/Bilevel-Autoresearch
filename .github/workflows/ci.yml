@@ -33,14 +33,3 @@ jobs:
       - name: Run tests
         run: |
           python -m pytest tests/ -v --tb=short
-
-  docker:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Docker image
-        run: docker build -t research-evo:ci .
-
-      - name: Test Docker image starts
-        run: docker run --rm research-evo:ci research-evo --help

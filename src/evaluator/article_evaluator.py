@@ -4,7 +4,6 @@ DESIGN PRINCIPLE: This evaluator NEVER receives inner lessons or skills.
 It scores only the current article against the fixed 5-dimension rubric.
 Isolation is what makes the score a reliable signal for both inner and outer loops.
 """
-import json
 
 from ..llm_client import call_llm, parse_json_response
 

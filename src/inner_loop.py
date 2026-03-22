@@ -6,7 +6,6 @@ After each run, checks convergence. Updates inner skills from high-confidence le
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from .runner import InnerRunner
 from .state import InnerLoopState, OuterLoopState

@@ -2,19 +2,17 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY requirements.txt pyproject.toml ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml ./
+RUN pip install --no-cache-dir -e .
 
 COPY src/ ./src/
-COPY config/default.yaml ./config/default.yaml
+COPY cli.py ./
+COPY articles/ ./articles/
 
-# Artifacts and memory are mounted as volumes
-VOLUME ["/app/artifacts", "/app/memory"]
-
-EXPOSE 8080
+# Artifacts are mounted as volumes
+VOLUME ["/app/artifacts"]
 
 ENV PYTHONUNBUFFERED=1
 
-# Default: start dashboard. Override for CLI:
-# docker run ... research-evo run "your topic"
-CMD ["research-evo", "serve", "--port", "8080", "--no-browser"]
+ENTRYPOINT ["python", "cli.py"]
+CMD ["--help"]

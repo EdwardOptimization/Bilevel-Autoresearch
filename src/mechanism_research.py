@@ -25,10 +25,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from .inner_loop import InnerLoopController
 from .llm_client import LLMClient
 from .pipeline.base import BaseStage
 from .runner import InnerRunner
-from .inner_loop import InnerLoopController
 from .state import InnerLoopState, OuterLoopState
 
 logger = logging.getLogger(__name__)
@@ -463,7 +463,7 @@ class MechanismResearcher:
             code = self._strip_fences(code)
 
         # Final save regardless
-        (session_dir / f"04_code_final.py").write_text(code, encoding="utf-8")
+        (session_dir / "04_code_final.py").write_text(code, encoding="utf-8")
         return code, self.max_code_retries
 
     def _syntax_check(self, code: str) -> str | None:

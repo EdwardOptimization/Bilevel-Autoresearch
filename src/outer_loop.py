@@ -15,10 +15,8 @@ import logging
 import os
 from pathlib import Path
 
-from .llm_client import LLMClient, parse_json_response
-
 from .inner_loop import InnerLoopController
-from .runner import InnerRunner
+from .llm_client import LLMClient, parse_json_response
 from .state import OuterLesson, OuterLoopState
 
 logger = logging.getLogger(__name__)

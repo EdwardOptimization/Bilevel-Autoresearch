@@ -12,10 +12,10 @@ import json
 import logging
 from pathlib import Path
 
-from .llm_client import call_llm, configure, parse_json_response
-
 from .evaluator.article_evaluator import ArticleEvaluator
+from .llm_client import call_llm, parse_json_response
 from .pipeline.article_analysis import ArticleAnalysisStage
+from .pipeline.base import BaseStage
 from .pipeline.edit_planning import EditPlanningStage
 from .pipeline.impact_assessment import ImpactAssessmentStage
 from .pipeline.improvement_hypotheses import ImprovementHypothesesStage
