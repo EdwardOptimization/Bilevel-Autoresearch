@@ -12,12 +12,11 @@
 ## Core Idea
 
 ```
-Level 1:    Inner loop optimizes the task      (propose → execute → evaluate → keep/discard)
-Level 1.5:  Outer loop adjusts inner config    (freeze params, shift strategy, inject guidance)
-Level 2:    Agent modifies inner loop CODE      (invent new mechanisms, change loop structure)
+Inner loop:  Optimizes the task output         (propose → execute → evaluate → keep/discard)
+Outer loop:  Optimizes how the inner loop works (analyze trace → modify mechanisms → re-run)
 ```
 
-Each level uses the same pattern: **propose × evaluate × iterate**. The difference is what gets optimized — task output, search configuration, or search mechanism itself.
+Both levels use the same pattern: **propose × evaluate × iterate**. The inner loop improves the task. The outer loop improves the inner loop — not by tuning prompts, but by structurally changing how it searches.
 
 ## Key Result
 
