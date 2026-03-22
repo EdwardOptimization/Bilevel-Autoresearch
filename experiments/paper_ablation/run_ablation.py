@@ -399,8 +399,8 @@ def run_group_c(
 
         # Level-2 researcher (uses the same LLM client as all other levels)
         researcher = TrainMechanismResearcher(
-            model=client.model,
-            api_key=client.api_key,
+            model=client._model,
+            api_key=client._api_key,
             provider=provider,
         )
 

@@ -1456,7 +1456,7 @@ class TrainRunner:
 
         try:
             result = subprocess.run(
-                ["uv", "run", str(run_path)],
+                ["python", str(run_path)],
                 capture_output=True, text=True,
                 timeout=timeout,
                 cwd=str(self.work_dir),
