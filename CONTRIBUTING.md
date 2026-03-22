@@ -43,6 +43,21 @@ Before contributing, understand these design invariants:
 4. Decide if this stage receives lesson injection (add to relevant stages if yes)
 5. Write tests if the stage has non-trivial logic
 
+## Adding a New Domain
+
+The framework supports multiple optimization domains beyond article editing.
+See `domains/train_opt/` for a complete example.
+
+To add a new domain:
+1. Create `domains/your_domain/` with these files:
+   - `runner.py` — inner loop (propose → execute → evaluate → keep/discard)
+   - `outer.py` — outer loop (analyze trace → modify search config)
+   - `config.py` — SearchConfig defining editable parameters
+   - `cli.py` — entry point
+2. Define your evaluation metric (must be objective and automated)
+3. Implement `TrainRunner` (or equivalent) with `run_iteration()` and `run_baseline()`
+4. Wire outer loop to modify `SearchConfig` based on trace analysis
+
 Or use **Level 2 mechanism research** to let the outer LLM generate stages automatically:
 ```bash
 python cli.py mechresearch --article article2

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "bilevel-autoresearch"
 version = "0.3.0"
 requires-python = ">=3.10"
-description = "A dual-layer self-improving article optimizer (Bilevel Autoresearch)"
+description = "A general framework for self-improving research pipelines with bilevel optimization"
 readme = "README.md"
 license = {file = "LICENSE"}
 keywords = ["llm", "ai", "research", "bilevel-optimization", "agents", "pipeline"]

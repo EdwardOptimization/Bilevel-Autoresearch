@@ -63,6 +63,18 @@ With stage: [6, 6, 6, 7, 6]  peak = 7  (+1)
 
 DeepSeek autonomously generated a `SubskillFeedbackLoopStage` (drawing from Behavioral Psychology / Curriculum Learning), code on first attempt, dynamically loaded via `importlib`.
 
+**Training domain** — GPT pretraining on RTX 5080 (Level 2 agent, 7 rounds):
+
+```
+Baseline:   val_bpb = 1.393  (50M model, 2-min training budget)
+Round 2:    val_bpb = 1.226  (Level 2 fixed quick-test, added momentum tracking)
+Round 7:    val_bpb = 1.219  (13M model, 10/11 keeps, 91% search efficiency)
+```
+
+Level 2 agent autonomously invented 12 mechanisms including ElitePool+Crossover,
+SimulatedAnnealing, PlateauDetector, and StepSizeCalibrator.
+Full report: `experiments/train_opt_20260322/REPORT.md`
+
 ---
 
 ## Quick Start
@@ -89,6 +101,12 @@ python cli.py run --max-inner 5 --max-outer 4
 
 # 7. Level 2 mechanism research — outer LLM generates new pipeline stages
 python cli.py mechresearch --article article2 --baseline-cycles 2 --max-inner 5
+
+# 8. Training domain — bilevel optimization on GPT pretraining (requires GPU + Karpathy's autoresearch)
+python -m domains.train_opt.cli --provider deepseek bilevel --inner-budget 5 --outer-cycles 2
+
+# 9. Training domain — inner loop only
+python -m domains.train_opt.cli --provider deepseek inner --iterations 10
 ```
 
 ---
@@ -169,6 +187,13 @@ src/
 │   └── generated/                # Dynamically generated stages (Level 2)
 └── evaluator/
     └── article_evaluator.py      # Rubric scoring — never reads memory
+domains/
+└── train_opt/                    # Training optimization domain (GPT pretraining)
+    ├── cli.py                    # Entry point: inner / bilevel
+    ├── runner.py                 # Inner loop: propose → train → evaluate → keep/discard
+    ├── outer.py                  # Outer loop: analyze trace → modify search config
+    └── config.py                 # SearchConfig (outer loop's control surface)
+experiments/                      # Timestamped experiment records
 ```
 
 ---
@@ -261,6 +286,9 @@ The key observation driving this project: each of the above represents a **human
 
 ## Roadmap
 
+- [x] Training optimization domain (GPT pretraining benchmark)
+- [x] Level 2 mechanism research with code generation
+- [x] --provider/--model CLI flags for any LLM provider
 - [ ] Outer loop strategy diversity (beyond Reflexion — try PromptBreeder, OPRO on separate cycles)
 - [ ] Embedding-based lesson retrieval (vs. keyword)
 - [ ] Multi-article parallel inner loops with shared outer signal

@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir -e .
 COPY src/ ./src/
 COPY cli.py ./
 COPY articles/ ./articles/
+COPY domains/ ./domains/
 
 # Artifacts are mounted as volumes
 VOLUME ["/app/artifacts"]

@@ -62,13 +62,17 @@ research-evo run "same topic" --show-lessons
 
 ## What the pipeline does
 
+> Note: This skill is for the **article optimization domain** (`src/`). The stages
+> below are specific to that domain. Other domains (e.g. `domains/train_opt/`) have
+> their own inner/outer loops.
+
 | Stage | Output | Notes |
 |-------|--------|-------|
-| A: Literature Scan | `literature_notes.md`, `citations.json` | Surveys existing work |
-| B: Hypothesis Generation | `hypotheses.md`, `hypotheses.json` | ← Lessons injected here |
-| C: Experiment Plan | `experiment_plan.md` | ← Lessons injected here |
-| D: Result Summary | `results.md` | Honest reporting |
-| E: Draft Writeup | `draft.md` (8 sections) | ← Lessons injected here |
+| 1: Article Analysis | Analysis of current article | Identifies weaknesses |
+| 2: Improvement Hypotheses | Proposed improvements | ← Lessons injected here |
+| 3: Edit Planning | Concrete edit plan | ← Lessons injected here |
+| 4: Impact Assessment | Predicted impact of edits | Evaluates proposed changes |
+| 5: Revised Output | `revised_article.md` | ← Lessons injected here |
 
 After pipeline: Evaluator scores each stage (0–10), Run Reviewer gives holistic verdict,
 Lesson Extractor pulls structured lessons (failure/success/guardrail/warning/decision).

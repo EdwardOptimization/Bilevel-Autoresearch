@@ -4,7 +4,7 @@ These are the **original unmodified versions** of the three articles (English).
 The outer loop resets to these files at the start of each outer iteration.
 
 Do not commit changes to these files — they are the ground truth baseline.
-Optimized versions are written to `examples/` by the pipeline.
+Optimized versions are written to `artifacts/` by the pipeline.
 
 | File | Article | Status |
 |------|---------|--------|
