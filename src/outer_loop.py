@@ -145,7 +145,7 @@ class OuterLoopController:
         """
         results = []
 
-        for outer_iter in range(self.max_outer_iterations):
+        for outer_iter in range(self.outer_state.current_cycle, self.max_outer_iterations):
             self.outer_state.begin_cycle()
             cycle = self.outer_state.current_cycle
             logger.info(f"\n{'='*60}")
@@ -202,6 +202,8 @@ class OuterLoopController:
 
             results.append({"cycle": cycle, "articles": cycle_results})
             self._save_cycle_summary(cycle, cycle_results)
+            self.outer_state.save_checkpoint()
+            logger.info(f"Checkpoint saved after cycle {cycle}")
 
             # Check outer convergence (after ≥2 cycles)
             if self.outer_state.is_outer_converged():
@@ -234,7 +236,14 @@ class OuterLoopController:
             # Append to existing override (accumulate guidance across cycles)
             existing = self.outer_state.prompt_overrides.get(stage, "")
             separator = f"\n\n## Outer Cycle {cycle} Guidance\n"
-            self.outer_state.prompt_overrides[stage] = existing + separator + addendum
+            new_override = existing + separator + addendum
+
+            # Cap: keep only the most recent 3 cycle sections to prevent unbounded growth
+            sections = new_override.split("\n\n## Outer Cycle ")
+            if len(sections) > 4:  # first section + 3 most recent
+                new_override = sections[0] + "\n\n## Outer Cycle " + "\n\n## Outer Cycle ".join(sections[-3:])
+
+            self.outer_state.prompt_overrides[stage] = new_override
 
             logger.info(f"[Outer {cycle}] Updated prompt override for stage: {stage}")
 

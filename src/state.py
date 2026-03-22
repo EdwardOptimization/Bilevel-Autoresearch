@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # ── Data classes ──────────────────────────────────────────────────────────────
@@ -278,9 +278,9 @@ class OuterLoopState:
             "strategy": strategy,
             "convergence_before": inner_before,
             "convergence_after": inner_after,
-            "delta": (inner_after - inner_before) if (inner_before and inner_after) else None,
+            "delta": (inner_after - inner_before) if (inner_before is not None and inner_after is not None) else None,
             "notes": notes,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
     def _persist_outer_lessons(self) -> None:
@@ -302,6 +302,44 @@ class OuterLoopState:
             return False
         convergences = [s.get("runs_to_threshold_8") for s in recent]
         return all(c is not None and c <= target_inner_runs for c in convergences)
+
+    # ── Checkpoint save/load ──────────────────────────────────────────────────
+
+    def save_checkpoint(self) -> None:
+        """Save outer loop state to a checkpoint file after each cycle."""
+        checkpoint = {
+            "current_cycle": self.current_cycle,
+            "prompt_overrides": self.prompt_overrides,
+            "outer_lessons": [l.to_dict() for l in self.outer_lessons],
+            "strategy_history": self.strategy_history,
+            "iteration_summaries": self.iteration_summaries,
+        }
+        path = self.base_dir / "artifacts" / "checkpoint.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(checkpoint, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    def load_checkpoint(self) -> bool:
+        """Load from checkpoint if it exists. Returns True if loaded."""
+        path = self.base_dir / "artifacts" / "checkpoint.json"
+        if not path.exists():
+            return False
+        data = json.loads(path.read_text(encoding="utf-8"))
+        self.current_cycle = data.get("current_cycle", 0)
+        self.prompt_overrides = data.get("prompt_overrides", {})
+        self.strategy_history = data.get("strategy_history", [])
+        self.iteration_summaries = data.get("iteration_summaries", [])
+        # Restore outer lessons
+        for raw in data.get("outer_lessons", []):
+            self.outer_lessons.append(OuterLesson(
+                outer_cycle=raw.get("outer_cycle", 0),
+                lesson_type=raw.get("lesson_type", ""),
+                strategy_used=raw.get("strategy_used", ""),
+                summary=raw.get("summary", ""),
+                reuse_rule=raw.get("reuse_rule", ""),
+                confidence=raw.get("confidence", 0.0),
+                stage_affected=raw.get("stage_affected", ""),
+            ))
+        return True
 
     # ── Cycle management ──────────────────────────────────────────────────────
 

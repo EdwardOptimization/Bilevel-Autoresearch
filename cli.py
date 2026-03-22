@@ -25,7 +25,8 @@ if _env_path.exists():
         line = line.strip()
         if line and not line.startswith("#") and "=" in line:
             k, _, v = line.partition("=")
-            os.environ.setdefault(k.strip(), v.strip())
+            v = v.strip().strip('"').strip("'")
+            os.environ.setdefault(k.strip(), v)
 
 from src.llm_client import configure
 from src.inner_loop import InnerLoopController
@@ -65,27 +66,36 @@ def load_articles(ids: list[str]) -> dict[str, str]:
     return articles
 
 
-def make_runner(minimax_key: str, model: str = "MiniMax-M2.7-highspeed") -> InnerRunner:
-    configure("minimax", minimax_key, model)
+def make_runner(provider: str = "minimax", model: str = "") -> InnerRunner:
+    from src.llm_client import PROVIDERS
+    pinfo = PROVIDERS.get(provider)
+    if not pinfo:
+        sys.exit(f"ERROR: Unknown provider '{provider}'. Choose from: {list(PROVIDERS)}")
+    api_key = os.environ.get(pinfo["api_key_env"], "")
+    if not api_key:
+        sys.exit(f"ERROR: {pinfo['api_key_env']} not set")
+    use_model = model or pinfo["default_model"]
+    configure(provider, api_key, use_model)
     artifacts_dir = BASE_DIR / "artifacts"
     artifacts_dir.mkdir(exist_ok=True)
-    return InnerRunner(
-        model=model,
-        eval_model=model,
-        min_score=6,
-        max_retries=2,
-        artifacts_base=artifacts_dir,
-    )
+    return InnerRunner(model=use_model, eval_model=use_model, min_score=6, max_retries=2, artifacts_base=artifacts_dir)
 
 
 def cmd_run(args):
     """Full dual-layer experiment."""
-    minimax_key = os.environ.get("MINIMAX_API_KEY", "")
-    deepseek_key = os.environ.get("DEEPSEEK_API_KEY", "")
-    if not minimax_key:
-        sys.exit("ERROR: MINIMAX_API_KEY not set")
-    if not deepseek_key:
-        sys.exit("ERROR: DEEPSEEK_API_KEY not set")
+    from src.llm_client import PROVIDERS
+    inner_provider = args.provider or "minimax"
+    inner_model = args.model or ""
+    outer_provider = args.outer_provider or "deepseek"
+    outer_model = args.outer_model or ""
+
+    outer_pinfo = PROVIDERS.get(outer_provider)
+    if not outer_pinfo:
+        sys.exit(f"ERROR: Unknown outer provider '{outer_provider}'. Choose from: {list(PROVIDERS)}")
+    outer_key = os.environ.get(outer_pinfo["api_key_env"], "")
+    if not outer_key:
+        sys.exit(f"ERROR: {outer_pinfo['api_key_env']} not set")
+    outer_use_model = outer_model or outer_pinfo["default_model"]
 
     article_ids = args.articles or list(ARTICLE_FILES.keys())
     articles = load_articles(article_ids)
@@ -94,14 +104,16 @@ def cmd_run(args):
         base_dir=BASE_DIR,
         original_articles=articles,
     )
-    runner = make_runner(minimax_key)
+    if args.resume and outer_state.load_checkpoint():
+        logger.info(f"Resumed from checkpoint at cycle {outer_state.current_cycle}")
+    runner = make_runner(inner_provider, inner_model)
     inner_ctrl = InnerLoopController(
         runner=runner,
         max_iterations=args.max_inner,
         convergence_threshold=8,
         convergence_consecutive=3,
     )
-    analyzer = OuterAnalyzer(model="deepseek-chat", api_key=deepseek_key)
+    analyzer = OuterAnalyzer(model=outer_use_model, api_key=outer_key)
     outer_ctrl = OuterLoopController(
         outer_state=outer_state,
         inner_controller=inner_ctrl,
@@ -136,9 +148,8 @@ def cmd_run(args):
 
 def cmd_inner(args):
     """Inner loop only — useful for debugging a single article."""
-    minimax_key = os.environ.get("MINIMAX_API_KEY", "")
-    if not minimax_key:
-        sys.exit("ERROR: MINIMAX_API_KEY not set")
+    inner_provider = args.provider or "minimax"
+    inner_model = args.model or ""
 
     article_id = args.article or "article15"
     articles = load_articles([article_id])
@@ -146,7 +157,7 @@ def cmd_inner(args):
     outer_state = OuterLoopState(base_dir=BASE_DIR, original_articles=articles)
     outer_state.begin_cycle()
 
-    runner = make_runner(minimax_key)
+    runner = make_runner(inner_provider, inner_model)
     inner_ctrl = InnerLoopController(
         runner=runner,
         max_iterations=args.max_inner,
@@ -166,14 +177,21 @@ def cmd_inner(args):
 
 def cmd_mechresearch(args):
     """Level 2 mechanism research — outer LLM generates a new pipeline stage."""
-    minimax_key = os.environ.get("MINIMAX_API_KEY", "")
-    deepseek_key = os.environ.get("DEEPSEEK_API_KEY", "")
-    if not minimax_key:
-        sys.exit("ERROR: MINIMAX_API_KEY not set")
-    if not deepseek_key:
-        sys.exit("ERROR: DEEPSEEK_API_KEY not set")
-
+    from src.llm_client import PROVIDERS
     from src.mechanism_research import MechanismResearcher
+
+    inner_provider = args.provider or "minimax"
+    inner_model = args.model or ""
+    outer_provider = args.outer_provider or "deepseek"
+    outer_model = args.outer_model or ""
+
+    outer_pinfo = PROVIDERS.get(outer_provider)
+    if not outer_pinfo:
+        sys.exit(f"ERROR: Unknown outer provider '{outer_provider}'. Choose from: {list(PROVIDERS)}")
+    outer_key = os.environ.get(outer_pinfo["api_key_env"], "")
+    if not outer_key:
+        sys.exit(f"ERROR: {outer_pinfo['api_key_env']} not set")
+    outer_use_model = outer_model or outer_pinfo["default_model"]
 
     article_id = args.article or "article2"
     articles = load_articles([article_id])
@@ -183,7 +201,7 @@ def cmd_mechresearch(args):
     # Run args.baseline_cycles inner cycles to give the researcher trace data.
     # Each cycle is a fresh InnerLoopController run on the original article.
     inner_states: list[InnerLoopState] = []
-    runner = make_runner(minimax_key)
+    runner = make_runner(inner_provider, inner_model)
 
     if args.baseline_cycles > 0:
         logger.info(f"Running {args.baseline_cycles} baseline cycle(s) to build trace data...")
@@ -210,9 +228,9 @@ def cmd_mechresearch(args):
 
     # --- Run mechanism research ---
     researcher = MechanismResearcher(
-        model="deepseek-chat",
-        api_key=deepseek_key,
-        provider="deepseek",
+        model=outer_use_model,
+        api_key=outer_key,
+        provider=outer_provider,
         max_code_retries=3,
         artifacts_base=BASE_DIR / "artifacts" / "mechanism_research",
     )
@@ -234,7 +252,7 @@ def cmd_mechresearch(args):
         # --- Validate: run inner loop with injected stage ---
         print("\nValidating generated stage against inner loop...")
         # Fresh runner so baseline stages are clean (no residual state)
-        val_runner = make_runner(minimax_key)
+        val_runner = make_runner(inner_provider, inner_model)
         val_runner.outer_cycle = 99  # separate artifact namespace
         validation = researcher.validate(result, article_content, val_runner, max_inner=args.max_inner)
 
@@ -261,9 +279,8 @@ def cmd_mechresearch(args):
 
 def cmd_once(args):
     """Single pipeline pass — smoke test."""
-    minimax_key = os.environ.get("MINIMAX_API_KEY", "")
-    if not minimax_key:
-        sys.exit("ERROR: MINIMAX_API_KEY not set")
+    inner_provider = args.provider or "minimax"
+    inner_model = args.model or ""
 
     article_id = args.article or "article15"
     articles = load_articles([article_id])
@@ -271,7 +288,7 @@ def cmd_once(args):
     outer_state = OuterLoopState(base_dir=BASE_DIR, original_articles=articles)
     outer_state.begin_cycle()
 
-    runner = make_runner(minimax_key)
+    runner = make_runner(inner_provider, inner_model)
 
     inner = InnerLoopState(
         original_article=articles[article_id],
@@ -290,6 +307,14 @@ def cmd_once(args):
 
 def main():
     parser = argparse.ArgumentParser(description="Dual-layer article optimizer")
+    parser.add_argument("--provider", default=None,
+                        help="Inner loop LLM provider (default: minimax). Options: minimax, openai, deepseek, anthropic, glm")
+    parser.add_argument("--model", default=None,
+                        help="Inner loop model name (default: provider's default)")
+    parser.add_argument("--outer-provider", default=None,
+                        help="Outer loop LLM provider (default: deepseek)")
+    parser.add_argument("--outer-model", default=None,
+                        help="Outer loop model name (default: provider's default)")
     sub = parser.add_subparsers(dest="cmd")
 
     # run
@@ -298,6 +323,8 @@ def main():
                        help="Articles to optimize (default: all)")
     p_run.add_argument("--max-inner", type=int, default=20, help="Max inner runs per cycle")
     p_run.add_argument("--max-outer", type=int, default=5, help="Max outer cycles")
+    p_run.add_argument("--resume", action="store_true",
+                       help="Resume from last checkpoint if available")
 
     # inner
     p_inner = sub.add_parser("inner", help="Inner loop only (one article)")

@@ -133,16 +133,15 @@ class InnerRunner:
 
         # Evaluate the final revised article (retry on fallback)
         revised_article = context["previous_outputs"].get("revised_output", inner_state.article_working_copy)
-        eval_result = self.evaluator.evaluate(revised_article, inner_state.article_id)
-        if eval_result.get("summary") == "Evaluation parsing failed.":
-            logger.warning(f"[Run {run_num}] Evaluation fallback, retrying...")
+        eval_result = None
+        for eval_attempt in range(3):
             eval_result = self.evaluator.evaluate(revised_article, inner_state.article_id)
-        if eval_result.get("summary") == "Evaluation parsing failed.":
-            logger.warning(f"[Run {run_num}] Evaluation fallback on retry 2, retrying...")
-            eval_result = self.evaluator.evaluate(revised_article, inner_state.article_id)
+            if eval_result.get("summary") != "Evaluation parsing failed.":
+                break
+            logger.warning(f"[Run {run_num}] Evaluation fallback, retrying (attempt {eval_attempt + 2}/3)...")
 
         # Map evaluator rubric dimensions to stage scores (E stage gets overall rubric score)
-        overall = int(eval_result.get("overall", 5))
+        overall = int(round(eval_result.get("overall", 5)))
 
         # Build RunResult using rubric dimension scores (A-E) for tracking
         rubric_scores = eval_result.get("scores", {})
@@ -291,6 +290,7 @@ Return JSON array:
         parsed = parse_json_response(raw)
 
         if not isinstance(parsed, list):
+            logger.warning(f"[Run {run_num}] Lesson extraction failed — could not parse LLM response")
             return []
 
         lessons = []

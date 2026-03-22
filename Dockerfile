@@ -14,5 +14,8 @@ VOLUME ["/app/artifacts"]
 
 ENV PYTHONUNBUFFERED=1
 
+RUN useradd -m -s /bin/bash appuser
+USER appuser
+
 ENTRYPOINT ["python", "cli.py"]
 CMD ["--help"]

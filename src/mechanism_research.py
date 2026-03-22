@@ -19,6 +19,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import logging
+import re
 import traceback as tb
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -432,6 +433,7 @@ class MechanismResearcher:
                 if len(parts) > 1:
                     name = parts[-1].strip().strip("`").strip()
                     if name and " " not in name:
+                        name = re.sub(r'[^a-zA-Z0-9_]', '', name)
                         stage_name = f"{name}_{session_id}"
 
         return inject_after, stage_name
@@ -468,6 +470,13 @@ class MechanismResearcher:
 
         # Final save regardless
         (session_dir / "04_code_final.py").write_text(code, encoding="utf-8")
+        final_error = self._syntax_check(code)
+        if final_error is not None:
+            (session_dir / "04_code_final_error.txt").write_text(final_error, encoding="utf-8")
+            raise RuntimeError(
+                f"Code generation failed after {self.max_code_retries} retries. "
+                f"Last error: {final_error}"
+            )
         return code, self.max_code_retries
 
     def _syntax_check(self, code: str) -> str | None:
@@ -482,6 +491,9 @@ class MechanismResearcher:
         """Write code to the generated/ directory and return the path."""
         filename = f"{stage_name}.py"
         stage_path = self._generated_dir / filename
+        self._generated_dir.mkdir(parents=True, exist_ok=True)
+        if not stage_path.resolve().is_relative_to(self._generated_dir.resolve()):
+            raise ValueError(f"Generated stage path escapes target directory: {stage_path}")
         stage_path.write_text(code, encoding="utf-8")
         # Also copy to session dir for record
         (session_dir / "05_final_stage.py").write_text(code, encoding="utf-8")
@@ -493,6 +505,10 @@ class MechanismResearcher:
         spec = importlib.util.spec_from_file_location(stage_name, stage_path)
         module = importlib.util.module_from_spec(spec)
         try:
+            logger.warning(
+                f"[MechResearch] About to execute generated code: {stage_path}\n"
+                f"  Review the file before running in production."
+            )
             spec.loader.exec_module(module)
         except Exception as e:
             raise RuntimeError(

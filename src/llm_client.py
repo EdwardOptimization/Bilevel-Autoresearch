@@ -17,6 +17,29 @@ from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
+# ── Module-level client caches ─────────────────────────────────────────────────
+_client_cache: dict[tuple[str, str], OpenAI] = {}
+_anthropic_client_cache: dict = {}
+
+
+def _get_openai_client(api_key: str, base_url: str) -> OpenAI:
+    """Get or create a cached OpenAI client for this (api_key, base_url) pair."""
+    cache_key = (api_key, base_url)
+    if cache_key not in _client_cache:
+        _client_cache[cache_key] = OpenAI(api_key=api_key, base_url=base_url)
+    return _client_cache[cache_key]
+
+
+def _get_anthropic_client(api_key: str):
+    """Get or create a cached Anthropic client for this api_key."""
+    if api_key not in _anthropic_client_cache:
+        try:
+            import anthropic
+        except ImportError:
+            raise ImportError("Install 'anthropic' package: pip install anthropic")
+        _anthropic_client_cache[api_key] = anthropic.Anthropic(api_key=api_key)
+    return _anthropic_client_cache[api_key]
+
 
 # ── Provider registry ─────────────────────────────────────────────────────────
 PROVIDERS: dict[str, dict] = {
@@ -61,11 +84,11 @@ _model_override: str = ""
 def configure(provider: str, api_key: str, model: str = "") -> None:
     """Configure the global LLM client. Call once at startup."""
     global _provider_name, _api_key, _model_override
+    if provider.lower() not in PROVIDERS:
+        raise ValueError(f"Unknown provider '{provider}'. Choose from: {list(PROVIDERS)}")
     _provider_name = provider.lower()
     _api_key = api_key
     _model_override = model
-    if _provider_name not in PROVIDERS:
-        raise ValueError(f"Unknown provider '{provider}'. Choose from: {list(PROVIDERS)}")
 
 
 def get_provider_info() -> dict:
@@ -121,7 +144,7 @@ def call_llm(
 def _call_openai_compat(
     prompt: str, system: str, model: str, max_tokens: int, api_key: str, base_url: str
 ) -> str:
-    client = OpenAI(api_key=api_key, base_url=base_url)
+    client = _get_openai_client(api_key, base_url)
     messages = []
     if system:
         messages.append({"role": "system", "content": system})
@@ -135,11 +158,7 @@ def _call_openai_compat(
 def _call_anthropic(
     prompt: str, system: str, model: str, max_tokens: int, api_key: str
 ) -> str:
-    try:
-        import anthropic
-    except ImportError:
-        raise ImportError("Install 'anthropic' package: pip install anthropic")
-    client = anthropic.Anthropic(api_key=api_key)
+    client = _get_anthropic_client(api_key)
     kwargs = {"model": model, "max_tokens": max_tokens, "messages": [{"role": "user", "content": prompt}]}
     if system:
         kwargs["system"] = system
@@ -240,6 +259,11 @@ class LLMClient:
         self._model = model or pinfo["default_model"]
         self._base_url = pinfo["base_url"]
         self._native_sdk = pinfo["native_sdk"]
+        # Pre-create and cache the underlying client at construction time.
+        if self._native_sdk:
+            self._client = _get_anthropic_client(self._api_key)
+        else:
+            self._client = _get_openai_client(self._api_key, self._base_url)
 
     def call(
         self,
@@ -253,11 +277,24 @@ class LLMClient:
         for attempt in range(max_retries):
             try:
                 if self._native_sdk:
-                    text = _call_anthropic(prompt, system, self._model, max_tokens, self._api_key)
+                    kwargs = {
+                        "model": self._model,
+                        "max_tokens": max_tokens,
+                        "messages": [{"role": "user", "content": prompt}],
+                    }
+                    if system:
+                        kwargs["system"] = system
+                    response = self._client.messages.create(**kwargs)
+                    text = response.content[0].text
                 else:
-                    text = _call_openai_compat(
-                        prompt, system, self._model, max_tokens, self._api_key, self._base_url
+                    messages = []
+                    if system:
+                        messages.append({"role": "system", "content": system})
+                    messages.append({"role": "user", "content": prompt})
+                    response = self._client.chat.completions.create(
+                        model=self._model, messages=messages, max_tokens=max_tokens
                     )
+                    text = response.choices[0].message.content or ""
                 return _strip_thinking_tags(text)
             except Exception as exc:
                 last_error = exc
