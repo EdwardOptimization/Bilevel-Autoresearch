@@ -226,6 +226,20 @@ The config space P is mixed-integer: discrete (strategy selection, two-phase gen
 
 ---
 
+## Related Work
+
+This project builds on and is inspired by three lines of work:
+
+| Project | What it contributes | Link |
+|---------|-------------------|------|
+| **AutoResearch** (Karpathy, 2026) | Established the single-track iterative autoresearch pattern: compress the problem, propose, evaluate, keep/discard | [GitHub](https://github.com/karpathy/autoresearch) |
+| **AutoResearchClaw** (AIMing Lab) | Extended autoresearch with end-to-end pipeline + multi-batch parallel search to escape local optima | [GitHub](https://github.com/aiming-lab/AutoResearchClaw) |
+| **EvoScientist** | Added persistent experience memory — failures and lessons are stored and fed back into future proposals | [GitHub](https://github.com/EvoScientist/EvoScientist) |
+
+The key observation driving this project: each of the above represents a **human-designed mechanism change** to the base autoresearch loop. Bilevel Autoresearch asks whether an outer optimization loop can discover such mechanism improvements autonomously — without them being pre-programmed as fixed options.
+
+---
+
 ## Roadmap
 
 - [ ] Outer loop strategy diversity (beyond Reflexion — try PromptBreeder, OPRO on separate cycles)

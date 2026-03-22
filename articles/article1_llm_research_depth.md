@@ -678,7 +678,7 @@ proposal -> run -> evaluate -> keep/discard -> iterate
 
 真正的差异，不在于它们是否"自动"，而在于它们分别强化了哪一层。
 
-#### AutoResearch：单轨局部优化器
+#### [AutoResearch](https://github.com/karpathy/autoresearch)（Karpathy, 2026）：单轨局部优化器
 - 把问题压到极窄的实验面上；
 - 用固定时间预算做小步试错；
 - 沿着单条主线持续优化指标；
@@ -686,14 +686,14 @@ proposal -> run -> evaluate -> keep/discard -> iterate
 
 它的长板是收敛速度，短板是更容易陷入局部最优。
 
-#### AutoResearchClaw：端到端流水线 + 多 batch 搜索
+#### [AutoResearchClaw](https://github.com/aiming-lab/AutoResearchClaw)（AIMing Lab）：端到端流水线 + 多 batch 搜索
 - 从文献发现、假设生成到实验和写论文全链路覆盖；
 - 通过多智能体辩论、多候选假设、多轮审查来降低单一路径偏见；
 - 本质上不只是"往前走"，而是在防止系统过早卡在局部最优。
 
 它的长板是全流程和多分支探索，短板是系统更重、环节更多，因而更依赖全链路的反馈质量。
 
-#### EvoScientist：实验笔记本 + 经验抽象器
+#### [EvoScientist](https://github.com/EvoScientist/EvoScientist)：实验笔记本 + 经验抽象器
 - 不只是试错，还把失败策略、无效方向和可复用教训写进记忆库；
 - 再把这些经验喂回下一轮 proposal；
 - 相当于给 AI 配了一套实验 notebook，并让它自己读笔记、自己长记性。

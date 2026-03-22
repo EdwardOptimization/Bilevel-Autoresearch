@@ -253,7 +253,7 @@ Run 13-16: 7→8→8→9（外层优化成熟期，α < 1 稳定收敛）
 
 文章1描述的 autoresearch 范式——"proposal × 反馈 × keep/discard × 迭代"——本身是人类 research 的产物：人类观察了大量迭代优化系统，发现了这个共同模式，将其提炼成框架，再用代码固化下来。
 
-AutoResearchClaw 加多 batch 是一次人类顿悟，EvoScientist 引入 teacher 模型是另一次人类顿悟。**每一次机制进化都需要人类介入。**
+[AutoResearchClaw](https://github.com/aiming-lab/AutoResearchClaw) 加多 batch 是一次人类顿悟，[EvoScientist](https://github.com/EvoScientist/EvoScientist) 引入 teacher 模型是另一次人类顿悟。**每一次机制进化都需要人类介入。**
 
 但如果 autoresearch 本身是可以被 research 出来的，那 agent 也可以用同样的框架去 research 新机制：
 
