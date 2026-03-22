@@ -48,6 +48,8 @@ Before contributing, understand these design invariants:
 The framework supports multiple optimization domains beyond article editing.
 See `domains/train_opt/` for a complete example.
 
+New domains should be self-contained in `domains/your_domain/`. They may import `core.llm_client` for LLM access but should implement their own runner and outer loop — do not subclass or depend on `core.runner` or `core.outer_loop`.
+
 To add a new domain:
 1. Create `domains/your_domain/` with these files:
    - `runner.py` — inner loop (propose → execute → evaluate → keep/discard)
@@ -55,7 +57,7 @@ To add a new domain:
    - `config.py` — SearchConfig defining editable parameters
    - `cli.py` — entry point
 2. Define your evaluation metric (must be objective and automated)
-3. Implement `TrainRunner` (or equivalent) with `run_iteration()` and `run_baseline()`
+3. Implement a runner class with `run_iteration()` and `run_baseline()` methods
 4. Wire outer loop to modify `SearchConfig` based on trace analysis
 
 Or use **Level 2 mechanism research** to let the outer LLM generate stages automatically:

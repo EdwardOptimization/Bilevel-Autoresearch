@@ -6,6 +6,7 @@ config/local.yaml
 artifacts/
 memory/
 skills/
+.memsearch/
 
 # Python
 __pycache__/

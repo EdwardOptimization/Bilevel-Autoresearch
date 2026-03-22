@@ -35,6 +35,31 @@ A Level 2 agent ran autonomously for 7 rounds on Karpathy's GPT pretraining benc
 val_bpb: 1.393 → 1.219    Search efficiency: 36% → 91%    Crash rate: 27% → 0%
 ```
 
+**Example: agent-generated mechanism** (ElitePool crossover, invented in Round 3):
+
+```python
+# The Level 2 agent wrote this code autonomously and injected it into the inner loop
+def generate_crossover(self, current_config: dict, active_params: list[str]) -> dict | None:
+    """Interpolate between top-2 elite configs to generate a new candidate."""
+    if len(self._pool) < 2:
+        return None
+    best_config = self._pool[0][1]
+    second_config = self._pool[1][1]
+    changes = {}
+    for param in active_params:
+        if param not in best_config or param not in second_config:
+            continue
+        try:
+            v1 = float(eval(str(best_config[param])))
+            v2 = float(eval(str(second_config[param])))
+            alpha = 0.6 + random.uniform(-0.15, 0.15)   # weighted interpolation
+            interpolated = round(alpha * v1 + (1 - alpha) * v2, 6)
+            changes[param] = interpolated
+        except (ValueError, TypeError):
+            continue
+    return {"changes": changes, "hypothesis": "Crossover between elite configs"} if changes else None
+```
+
 Full report: [`experiments/train_opt_20260322/REPORT.md`](experiments/train_opt_20260322/REPORT.md)
 
 ---
@@ -63,15 +88,15 @@ See [`.env.example`](.env.example) for required API keys.
 
 ```
 cli.py                            # Entry point (article domain)
-core/                             # Bilevel framework
+core/                             # Bilevel framework + article optimization demo
 ├── runner.py                     # InnerRunner + inject_stage()
 ├── inner_loop.py                 # InnerLoopController
 ├── outer_loop.py                 # OuterAnalyzer + OuterLoopController
 ├── mechanism_research.py         # Level 2: generate new pipeline stages as code
 ├── state.py                      # State management with isolation boundaries
 ├── llm_client.py                 # Multi-provider LLM client
-├── pipeline/                     # Article demo: 5 stages (A→E)
-└── evaluator/                    # Rubric scoring (isolated from lessons)
+├── pipeline/                     # Article demo stages (A→E) — bundled, not the framework
+└── evaluator/                    # Article demo evaluator — bundled, not the framework
 domains/
 └── train_opt/                    # Training demo: GPT pretraining optimization
     ├── runner.py                 # Inner loop with 12 agent-invented mechanisms
