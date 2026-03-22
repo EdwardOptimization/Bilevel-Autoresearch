@@ -233,7 +233,92 @@ Run 13-16: 7→8→8→9（外层优化成熟期，α < 1 稳定收敛）
 
 ---
 
-## 6. 与文章1和文章2的关系
+## 6. 外层循环的边界与扩展：从配置优化到机制研究
+
+### 6.1 当前外层的局限
+
+本文描述的外层循环，优化的是 pipeline 的**配置**——prompt 设计、token 预算、约束条件。用文章1的语言说，它在调整"内层说什么"，而不是"内层怎么搜索"。
+
+这个区别很关键：
+
+| 当前外层能做的 | 当前外层做不到的 |
+|--------------|----------------|
+| 改 Stage B 的 prompt 要求 | 在 Stage B 之后增加一个独立 critic 节点 |
+| 调整 token 预算 | 把单轨搜索改为多 batch 并行 |
+| 选择 Reflexion / OPRO 策略 | 发现一种人类还没想到的搜索机制 |
+
+如果把可选策略做成固定菜单（Reflexion / multi-batch / beam search / teacher-critique），外层就变成了一个在预定义机制里选择的分类器。**搜索空间被固定了，上限就是人类已经设计出来的机制。**
+
+### 6.2 autoresearch 框架本身是 research 出来的
+
+文章1描述的 autoresearch 范式——"proposal × 反馈 × keep/discard × 迭代"——本身是人类 research 的产物：人类观察了大量迭代优化系统，发现了这个共同模式，将其提炼成框架，再用代码固化下来。
+
+AutoResearchClaw 加多 batch 是一次人类顿悟，EvoScientist 引入 teacher 模型是另一次人类顿悟。**每一次机制进化都需要人类介入。**
+
+但如果 autoresearch 本身是可以被 research 出来的，那 agent 也可以用同样的框架去 research 新机制：
+
+> **外层 agent 不应该从固定菜单中选择机制，而应该把"发现更好的内层搜索机制"本身当作一个 research question，用 autoresearch 方式去研究它。**
+
+### 6.3 三层递归结构
+
+这形成了一个自然的递归：
+
+```
+Level 0：人类 research
+  research question：什么样的迭代框架能让 LLM 系统持续改进？
+  输出：autoresearch 框架（proposal × 反馈 × 迭代）
+
+Level 1：内层 autoresearch
+  research question：如何把课题 X 的输出质量做到 ≥8/10？
+  工具：固定的 5 阶段 pipeline + evaluator
+  输出：高质量的研究内容
+
+Level 2：外层 autoresearch
+  research question：什么样的内层搜索机制能让 α 更低、收敛更快？
+  工具：内层作为实验 harness，收敛率作为 reward
+  输出：更好的内层搜索机制（新的 stage 组合、新的反馈结构、新的搜索拓扑）
+```
+
+Level 2 的外层 agent 的工作流与 Level 1 完全同构：
+
+```
+提出机制假设 → 生成实现（代码或 pipeline 修改）
+→ 以内层为 harness 运行验证
+→ 观察 α 是否下降
+→ keep（固化为新机制）或 discard（回滚）
+→ 提炼 lesson："critic 节点对 D 维度有效，对 B 维度无影响"
+→ 下一轮提出新假设
+```
+
+这里的 proposal 不再是 prompt 文本，而是**机制描述**——外层 LLM 可以提出任何它能想象的搜索结构变化，然后用代码生成将其实现。实现本身也可以迭代：第一版代码有 bug，根据报错修复，再测试——这是 autoresearch 在实现层面的体现。
+
+### 6.4 autoresearch 框架的边界
+
+这个递归结构揭示了一个更基础的命题：
+
+> **autoresearch 框架的边界，不是由搜索空间的大小决定的，而是由 research question 的可度量性决定的。只要能定义清晰的反馈面，autoresearch 就可以在任何层级上工作——包括用来 research autoresearch 本身。**
+
+验证这个命题需要三个条件成立：
+
+1. **research question 足够具体**：Level 2 的问题是"哪种机制让 α 更低"，而不是"哪种 AI 系统更好"——前者可度量，后者不可比。
+2. **反馈面真实**：内层的收敛率、peak score、达到阈值的轮数，是客观的、不可博弈的信号。
+3. **迭代预算充足**：机制假设需要多次 inner cycle 验证，外层需要足够的 cycle 预算来 research。
+
+从文章1的公式看，Level 2 的四个因子与 Level 1 完全对应：
+
+```
+effective mechanism research =
+  outer_model_prior          (外层 LLM 对"什么机制有效"的先验)
+  × context_update           (内层每次运行的收敛数据积累成外层的 context)
+  × reward_fidelity          (内层的收敛指标是否真实反映机制质量)
+  × iteration_budget         (外层有多少个 cycle 来验证机制假设)
+```
+
+这个对应不是比喻，而是同一个框架在不同层级的实例化。
+
+---
+
+## 7. 与文章1和文章2的关系
 
 ### 与文章1的关系
 
@@ -260,7 +345,7 @@ Run 13-16: 7→8→8→9（外层优化成熟期，α < 1 稳定收敛）
 
 ---
 
-## 7. 结论
+## 8. 结论
 
 本文将这一双层嵌套优化结构命名为 **Bilevel Autoresearch**，与 Bilevel Optimization 理论对齐。
 
