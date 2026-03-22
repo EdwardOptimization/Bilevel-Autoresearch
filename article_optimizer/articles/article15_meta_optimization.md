@@ -1,6 +1,6 @@
-# 用 autoresearch 优化 autoresearch 自身的流程：双层嵌套优化
+# 用 autoresearch 优化 autoresearch 自身的流程：Bilevel Autoresearch
 
-> 副标题：当 autoresearch 的"固定研究方向"是 autoresearch 流程本身时，会发生什么
+> 副标题：将双层嵌套优化结构对齐到 Bilevel Optimization 框架——当 autoresearch 的"固定研究方向"是 autoresearch 流程本身时，会发生什么
 
 ## 摘要
 
@@ -70,6 +70,8 @@ X 的研究质量持续提升
 
 ## 3. 双层结构的形式化描述
 
+### 3.1 迭代形式
+
 设：
 - `Q_t`：第 t 次运行时 pipeline 的输出质量
 - `P_t`：第 t 次运行时 pipeline 的配置（prompt 设计、token 预算、约束条件等）
@@ -100,6 +102,53 @@ d(t+1) = α × d(t)
 ```
 
 关键点：**α 本身是被外层循环优化的变量**。这是单层 autoresearch 没有的特性。
+
+### 3.2 Bilevel Optimization 形式
+
+上述结构可以直接对齐到 Bilevel Optimization 的标准形式：
+
+```
+上层（outer loop）：
+  min  F(P) = -E[Q | P]          # 最大化期望输出质量
+  over P ∈ P_space               # pipeline 配置空间
+
+  s.t. P* 来自下层问题的解
+
+下层（inner loop）：
+  min  f(Q | P, X)               # 在固定配置 P 下最优化研究质量
+  over Q（pipeline 的运行轨迹）
+```
+
+这是双层优化（Bilevel Optimization）的直接实例：**上层优化 pipeline 配置，下层在该配置约束下运行 pipeline 优化输出质量。** 两层的目标函数耦合——下层的解（Q_t）是上层更新 P 的依据。
+
+### 3.3 MINLP 视角
+
+将配置空间 P 展开，可以发现它天然是混合整数非线性规划（MINLP）结构：
+
+| 决策变量类型 | 示例 |
+|------------|------|
+| 离散变量（整数） | 选用哪种搜索策略（OPRO / Reflexion / PromptBreeder） |
+| 离散变量（二值） | 某 stage 是否启用两阶段生成 |
+| 连续变量 | token 预算（如 4096 → 8000）、字符截断阈值 |
+| 隐式连续变量 | lesson 的 confidence score、skill 的 promotion 阈值 |
+
+目标函数 F(P) 高度非线性：P 的微小变化（如 token 预算从 4096 → 5500）可能导致输出质量的非线性跳变（如解锁推理模型完整输出 4 条假设 vs. 截断后只有 2 条）。
+
+因此，**Bilevel Autoresearch 是一个 Bilevel MINLP 问题**，其中上层是 MINLP，下层是 LLM 驱动的近似求解器。
+
+### 3.4 关键差异：近似求解的内层
+
+经典 Bilevel Optimization 理论要求下层问题求解到全局最优（或至少 KKT 点）。但在 Bilevel Autoresearch 中：
+
+> **下层由 LLM 近似求解，不保证全局最优，甚至不保证局部最优。**
+
+LLM 是一个带噪声的启发式求解器——同一个 P 跑两次可能得到不同的 Q。这带来了新的研究问题：
+
+- 当下层解不稳定时，上层的梯度估计如何仍然有效？
+- 多次内层采样（multi-batch）是否可以降低上层更新的方差？
+- "解到足够好"（Q ≥ 阈值）的终止条件是否比"全局最优"更适合此类系统？
+
+这是 **approximate bilevel optimization with LLM solvers** 作为独立研究方向的入口：经典 bilevel 理论假设内层精确求解，而 LLM 求解器引入了可控但不消除的近似误差。
 
 ---
 
@@ -213,11 +262,20 @@ Run 13-16: 7→8→8→9（外层优化成熟期，α < 1 稳定收敛）
 
 ## 7. 结论
 
-本文的核心论点是：
+本文将这一双层嵌套优化结构命名为 **Bilevel Autoresearch**，与 Bilevel Optimization 理论对齐。
+
+核心论点是：
 
 > **autoresearch 框架不仅可以用于优化某个固定研究方向，也可以用于优化 autoresearch 流程本身——当这两层形成嵌套时，系统获得了单层结构没有的自适应能力：外层循环通过结构化经验持续降低内层的有效误差乘子 α，使得即使模型能力有限（如 MiniMax-M2.7-highspeed），系统也能在 17 次迭代后稳定收敛到 9/10 的输出质量。**
 
-这个双层结构的三个必要条件：
+从优化理论视角，Bilevel Autoresearch 是一个 **Bilevel MINLP** 实例，其中：
+- 上层（外层循环）在离散+连续混合的 pipeline 配置空间中搜索最优配置
+- 下层（内层 pipeline）由 LLM 近似求解，不保证全局最优
+- 两层通过结构化 lessons/skills 耦合，而非通过梯度传递
+
+这个"近似求解的内层"是与经典 bilevel 理论的关键差异，也是 **approximate bilevel optimization with LLM solvers** 这一新研究方向的核心问题。
+
+三个必要条件：
 1. **Evaluator 与记忆隔离**（保证外层反馈客观）
 2. **Lessons 结构化**（保证跨层传递有效）
 3. **外层优化变量真正影响内层质量**（保证两层真正耦合）
