@@ -1,6 +1,7 @@
 import json
-from src.pipeline.base import BaseStage
+
 from src.llm_client import call_llm, parse_json_response
+from src.pipeline.base import BaseStage
 
 SYSTEM = """You are a precision editing coach. Analyze this edit plan for logical sub-skills."""
 
@@ -13,7 +14,6 @@ class SubskillFeedbackLoopStage(BaseStage):
     def run(self, context: dict) -> dict:
         plan_text = context["previous_outputs"].get("edit_planning", "")
         critique_text = context["previous_outputs"].get("article_analysis", "")
-        article_text = context["article_content"]
         lessons_text = context.get("retrieved_lessons", "")
         retry_feedback = context.get("evaluator_feedback", "")
 

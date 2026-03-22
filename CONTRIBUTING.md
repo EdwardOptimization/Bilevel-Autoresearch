@@ -1,12 +1,12 @@
-# Contributing to EvoResearch
+# Contributing to Bilevel Autoresearch
 
 Thank you for your interest in contributing!
 
 ## Development Setup
 
 ```bash
-git clone https://github.com/your-username/evo-research.git
-cd evo-research
+git clone https://github.com/EdwardOptimization/Bilevel-Autoresearch.git
+cd Bilevel-Autoresearch
 pip install -e ".[dev]"
 ```
 
@@ -16,14 +16,14 @@ pip install -e ".[dev]"
 python -m pytest tests/ -v
 ```
 
-Tests cover: LLM client (think-tag stripping, JSON parsing), lesson retrieval, memory persistence.
+Tests cover: LLM client (think-tag stripping, JSON parsing), pipeline stages, runner (inject_stage), state management.
 They run offline — no API key required.
 
 ## Key Architecture Constraints
 
 Before contributing, understand these design invariants:
 
-1. **Evaluator isolation**: `StageEvaluator` and `RunReviewer` must NEVER receive lesson memory.
+1. **Evaluator isolation**: The evaluator must NEVER receive lesson memory.
    Lessons only influence *proposals* (stages that produce research content), never *judgments*.
 
 2. **Skills vs Lessons**: Promoted skills are distilled from many lessons. Skills are structural
@@ -39,10 +39,14 @@ Before contributing, understand these design invariants:
 
 1. Create `src/pipeline/your_stage.py` extending `BaseStage`
 2. Add `name = "your_stage"` class attribute
-3. Register in `src/orchestrator/run_manager.py`
-4. Add a rubric entry in `src/evaluator/rubric.py`
-5. Decide if this stage receives lesson injection (add to `INJECTION_STAGES` if yes)
-6. Write tests if the stage has non-trivial logic
+3. Register in `src/runner.py` — add to `self.stages` list in `InnerRunner.__init__`
+4. Decide if this stage receives lesson injection (add to relevant stages if yes)
+5. Write tests if the stage has non-trivial logic
+
+Or use **Level 2 mechanism research** to let the outer LLM generate stages automatically:
+```bash
+python cli.py mechresearch --article article2
+```
 
 ## Adding a New LLM Provider
 
@@ -71,8 +75,7 @@ ruff format src/ tests/   # format
 - Keep PRs focused — one concern per PR
 - Tests must pass: `python -m pytest tests/ -v`
 - Lint must pass: `ruff check src/ tests/`
-- Update `OPTIMIZATION_LOG.md` if you ran evaluation loops
-- Do not commit `config/local.yaml` (contains API keys) or `artifacts/` or `memory/`
+- Do not commit `artifacts/` or `memory/` directories
 
 ## Reporting Issues
 

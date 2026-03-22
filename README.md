@@ -5,8 +5,8 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![CI](https://github.com/EdwardOptimization/Bilevel-Autoresearch/actions/workflows/ci.yml/badge.svg)](https://github.com/EdwardOptimization/Bilevel-Autoresearch/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Providers](https://img.shields.io/badge/LLM-DeepSeek%20%7C%20MiniMax%20%7C%20OpenAI%20%7C%20Anthropic-purple.svg)](#providers)
-[![Tests](https://img.shields.io/badge/tests-59%20passing-brightgreen.svg)](tests/)
+[![Providers](https://img.shields.io/badge/LLM-DeepSeek%20%7C%20MiniMax%20%7C%20OpenAI%20%7C%20Anthropic%20%7C%20GLM-purple.svg)](#providers)
+[![Tests](https://img.shields.io/badge/tests-44%20passing-brightgreen.svg)](tests/)
 
 ---
 
@@ -54,6 +54,15 @@ Cycle 4: 6.4, 6.4, 7.0, 6.8, 6.6
 
 Cycle 2 stability (4/5 runs at 7.0 vs. declining in Cycle 1) is direct evidence of the outer loop working.
 
+**Level 2 mechanism research** — outer LLM generates new pipeline stages:
+
+```
+Baseline:   [6, 6, 7, 7, 6]  peak = 6
+With stage: [6, 6, 6, 7, 6]  peak = 7  (+1)
+```
+
+DeepSeek autonomously generated a `SubskillFeedbackLoopStage` (drawing from Behavioral Psychology / Curriculum Learning), code on first attempt, dynamically loaded via `importlib`.
+
 ---
 
 ## Quick Start
@@ -67,16 +76,19 @@ export MINIMAX_API_KEY="sk-..."     # inner loop (article editing)
 export DEEPSEEK_API_KEY="sk-..."    # outer loop (meta-optimization)
 
 # 3. Smoke test — one pass on article1
-python article_optimizer/cli.py once --article article1
+python cli.py once --article article1
 
 # 4. Inner loop only — 5 runs, no outer optimization
-python article_optimizer/cli.py inner --article article1 --max-inner 5
+python cli.py inner --article article1 --max-inner 5
 
 # 5. Full dual-layer experiment
-python article_optimizer/cli.py run --articles article1 --max-inner 5 --max-outer 4
+python cli.py run --articles article1 --max-inner 5 --max-outer 4
 
 # 6. Run all three articles
-python article_optimizer/cli.py run --max-inner 5 --max-outer 4
+python cli.py run --max-inner 5 --max-outer 4
+
+# 7. Level 2 mechanism research — outer LLM generates new pipeline stages
+python cli.py mechresearch --article article2 --baseline-cycles 2 --max-inner 5
 ```
 
 ---
@@ -134,31 +146,29 @@ Prompt overrides are injected into the inner pipeline's stages at the start of t
 ## Architecture
 
 ```
-article_optimizer/
-├── cli.py                        # Entry point: once / inner / run commands
-├── articles/                     # Baseline article files (ground truth)
+cli.py                            # Entry point: once / inner / run / mechresearch
+articles/                         # Baseline article files (ground truth)
 │   ├── article1_llm_research_depth.md
 │   ├── article15_meta_optimization.md
-│   └── article2_agent_team_scale.md
-└── src/
-    ├── runner.py                 # InnerRunner: one full A→B→C→D→E pass
-    ├── inner_loop.py             # InnerLoopController: runs until convergence
-    ├── outer_loop.py             # OuterAnalyzer + OuterLoopController
-    ├── state.py                  # InnerLoopState / OuterLoopState / RunResult
-    ├── pipeline/
-    │   ├── base.py               # BaseStage
-    │   ├── article_analysis.py   # Stage A
-    │   ├── improvement_hypotheses.py  # Stage B
-    │   ├── edit_planning.py      # Stage C
-    │   ├── impact_assessment.py  # Stage D
-    │   └── revised_output.py     # Stage E
-    └── evaluator/
-        └── article_evaluator.py  # Rubric scoring — never reads memory
-
+│   ├── article2_agent_team_scale.md
+│   └── zh/                       # Chinese originals (archived)
 src/
-└── llm_client.py                 # Multi-provider client (LLMClient + module-level API)
-                                  # LLMClient is instance-scoped — prevents outer loop
-                                  # from clobbering inner loop's provider config
+├── llm_client.py                 # Multi-provider client (LLMClient + module-level API)
+├── runner.py                     # InnerRunner: one full A→B→C→D→E pass + inject_stage()
+├── inner_loop.py                 # InnerLoopController: runs until convergence
+├── outer_loop.py                 # OuterAnalyzer + OuterLoopController
+├── state.py                      # InnerLoopState / OuterLoopState / RunResult
+├── mechanism_research.py         # Level 2: outer LLM researches new mechanisms via code gen
+├── pipeline/
+│   ├── base.py                   # BaseStage
+│   ├── article_analysis.py       # Stage A
+│   ├── improvement_hypotheses.py # Stage B
+│   ├── edit_planning.py          # Stage C
+│   ├── impact_assessment.py      # Stage D
+│   ├── revised_output.py         # Stage E
+│   └── generated/                # Dynamically generated stages (Level 2)
+└── evaluator/
+    └── article_evaluator.py      # Rubric scoring — never reads memory
 ```
 
 ---
@@ -166,7 +176,7 @@ src/
 ## Artifact Structure
 
 ```
-article_optimizer/artifacts/
+artifacts/
 └── cycle_01/
     ├── run_001/
     │   ├── evaluation.json          ← rubric scores A-E + overall
@@ -179,6 +189,15 @@ article_optimizer/artifacts/
     ├── run_002/ ...
     └── run_005/
 └── cycle_02/ ...
+└── mechanism_research/            ← Level 2 research sessions
+    └── session_YYYYMMDD_HHMMSS/
+        ├── 01_exploration.md
+        ├── 02_critique.md
+        ├── 03_spec.md
+        ├── 04_code_attempt_1.py
+        ├── 05_final_stage.py
+        ├── 06_summary.json
+        └── 07_validation.json
 ```
 
 ---
@@ -197,7 +216,7 @@ article_optimizer/artifacts/
 
 ## The Theory
 
-This system is the implementation described in the article series in `article_optimizer/articles/`:
+This system is the implementation described in the article series in `articles/`:
 
 - **Article 1** (`article1_llm_research_depth.md`): Single-loop autoresearch — proposal × feedback × iteration
 - **Article 1.5** (`article15_meta_optimization.md`): **Bilevel Autoresearch** — when the pipeline itself becomes the research target
