@@ -2,13 +2,13 @@
 
 Usage:
   # Run full dual-layer experiment (all articles, up to 5 outer cycles):
-  python article_optimizer/cli.py run
+  python cli.py run
 
   # Run inner loop only on one article (debug/test):
-  python article_optimizer/cli.py inner --article article15
+  python cli.py inner --article article15
 
   # Run a single pipeline pass on an article (smoke test):
-  python article_optimizer/cli.py once --article article1
+  python cli.py once --article article1
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 # Load project .env before anything else
-_env_path = Path(__file__).parent.parent / ".env"
+_env_path = Path(__file__).parent / ".env"
 if _env_path.exists():
     for line in _env_path.read_text().splitlines():
         line = line.strip()
@@ -27,14 +27,11 @@ if _env_path.exists():
             k, _, v = line.partition("=")
             os.environ.setdefault(k.strip(), v.strip())
 
-# Add root to path for shared src/
-sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.llm_client import configure
-
-from article_optimizer.src.inner_loop import InnerLoopController
-from article_optimizer.src.outer_loop import OuterAnalyzer, OuterLoopController
-from article_optimizer.src.runner import InnerRunner
-from article_optimizer.src.state import OuterLoopState
+from src.inner_loop import InnerLoopController
+from src.outer_loop import OuterAnalyzer, OuterLoopController
+from src.runner import InnerRunner
+from src.state import OuterLoopState
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).parent
 ARTICLES_DIR = BASE_DIR / "articles"
-REFERENCE_DOC = BASE_DIR.parent / "docs" / "reference_frameworks.md"
+REFERENCE_DOC = BASE_DIR / "docs" / "reference_frameworks.md"
 
 ARTICLE_FILES = {
     "article1": "article1_llm_research_depth.md",
@@ -181,7 +178,7 @@ def cmd_once(args):
 
     runner = make_runner(minimax_key)
 
-    from article_optimizer.src.state import InnerLoopState
+    from src.state import InnerLoopState
     inner = InnerLoopState(
         original_article=articles[article_id],
         article_id=article_id,

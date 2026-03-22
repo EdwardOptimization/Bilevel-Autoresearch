@@ -10,14 +10,9 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 from pathlib import Path
 
-# Add project root to path so "src.llm_client" resolves to the same module
-# instance that cli.py configures (avoids "deepseek" default in a separate
-# bare-import "llm_client" module).
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from src.llm_client import call_llm, configure, parse_json_response
+from .llm_client import call_llm, configure, parse_json_response
 
 from .evaluator.article_evaluator import ArticleEvaluator
 from .pipeline.article_analysis import ArticleAnalysisStage

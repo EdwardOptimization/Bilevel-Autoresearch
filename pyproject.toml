@@ -3,30 +3,21 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "research-evo"
-version = "0.2.0"
+name = "bilevel-autoresearch"
+version = "0.3.0"
 requires-python = ">=3.10"
-description = "A self-improving AI research pipeline with evolutionary memory"
+description = "A dual-layer self-improving article optimizer (Bilevel Autoresearch)"
 readme = "README.md"
 license = {file = "LICENSE"}
-keywords = ["llm", "ai", "research", "agents", "pipeline", "evolution"]
+keywords = ["llm", "ai", "research", "bilevel-optimization", "agents", "pipeline"]
 dependencies = [
     "openai>=1.0.0",
-    "click>=8.1.0",
     "pyyaml>=6.0",
-    "rich>=13.0.0",
-    "fastapi>=0.110.0",
-    "uvicorn>=0.27.0",
-    "jinja2>=3.1.0",
 ]
 
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.25.0"]
-mcp = ["mcp>=1.0.0"]
 dev = ["pytest>=8.0", "ruff>=0.3.0"]
-
-[project.scripts]
-research-evo = "src.cli.main:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
