@@ -927,8 +927,12 @@ class TrainRunner:
         log_path = iter_dir / log_name
 
         try:
+            # Use the work_dir's .venv python if available (has torch),
+            # otherwise fall back to current interpreter
+            venv_python = self.work_dir / ".venv" / "bin" / "python"
+            python_cmd = str(venv_python) if venv_python.exists() else sys.executable
             result = subprocess.run(
-                [sys.executable, str(run_path)],
+                [python_cmd, str(run_path)],
                 capture_output=True, text=True,
                 timeout=timeout,
                 cwd=str(self.work_dir),
