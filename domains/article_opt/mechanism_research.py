@@ -13,6 +13,7 @@ Research session flow:
   5. Load+Smoke — dynamic import + 1-run smoke test to catch syntax/runtime errors
   6. Fix        — if error, feed traceback back to LLM, retry (up to max_code_retries)
   7. Validate   — run full inner cycle with new stage, measure alpha vs baseline
+
 """
 from __future__ import annotations
 

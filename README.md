@@ -73,16 +73,13 @@ Full ablation report: [`experiments/ablations/paper_ablation/run2_results/REPORT
 pip install -e .
 cp .env.example .env  # fill in your API keys
 
+# Article optimization — lightweight demo (no GPU needed)
+python -m domains.article_opt.cli --provider openai once --article article1  # smoke test
+python -m domains.article_opt.cli run --articles article1 --max-inner 5 --max-outer 4   # full bilevel
+
 # Training optimization — reproduce the paper result (needs GPU)
 git clone https://github.com/karpathy/autoresearch.git ~/karpathy_autoresearch
 python -m domains.train_opt.cli --provider deepseek bilevel --inner-budget 5 --outer-cycles 2
-
-# Article optimization — lightweight demo (no GPU needed, needs MINIMAX_API_KEY)
-python -m domains.article_opt.cli once --article article1                    # smoke test
-python -m domains.article_opt.cli run --articles article1 --max-inner 5 --max-outer 4   # full bilevel
-
-# Use any LLM provider
-python -m domains.article_opt.cli --provider openai --outer-provider openai run --max-inner 5
 ```
 
 ---

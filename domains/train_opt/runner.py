@@ -82,6 +82,7 @@ Structural improvements (Level 2 — Round 10):
 """
 from __future__ import annotations
 
+import ast
 import json
 import logging
 import math
@@ -259,8 +260,8 @@ class MomentumTracker:
     def _detect_direction(self, param: str, old_val: str, new_val) -> str | None:
         """Detect whether a parameter was increased or decreased."""
         try:
-            old_num = float(eval(str(old_val)))
-            new_num = float(eval(str(new_val)))
+            old_num = float(ast.literal_eval(str(old_val)))
+            new_num = float(ast.literal_eval(str(new_val)))
             if new_num > old_num:
                 return "increase"
             elif new_num < old_num:
@@ -374,8 +375,8 @@ class StepSizeCalibrator:
     def _compute_relative_change(self, old_val, new_val) -> float | None:
         """Compute relative change as a percentage."""
         try:
-            old_num = float(eval(str(old_val)))
-            new_num = float(eval(str(new_val)))
+            old_num = float(ast.literal_eval(str(old_val)))
+            new_num = float(ast.literal_eval(str(new_val)))
             if abs(old_num) < 1e-12:
                 return None
             return abs(new_num - old_num) / abs(old_num) * 100
@@ -633,8 +634,8 @@ class ElitePool:
 
             # Try numeric interpolation
             try:
-                best_num = float(eval(str(best_val)))
-                second_num = float(eval(str(second_val)))
+                best_num = float(ast.literal_eval(str(best_val)))
+                second_num = float(ast.literal_eval(str(second_val)))
                 # Weighted interpolation: 60% best, 40% second
                 # With some random perturbation to avoid exact repeats
                 alpha = 0.6 + random.uniform(-0.15, 0.15)
@@ -648,7 +649,7 @@ class ElitePool:
 
                 # Only include if different from current
                 try:
-                    current_num = float(eval(str(current_config.get(param, ""))))
+                    current_num = float(ast.literal_eval(str(current_config.get(param, ""))))
                     if abs(interpolated - current_num) > 1e-6:
                         changes[param] = interpolated
                 except (ValueError, TypeError, SyntaxError, NameError):

@@ -23,9 +23,9 @@ python -m domains.train_opt.cli --provider deepseek inner --iterations 10
 
 Requires [Karpathy's autoresearch](https://github.com/karpathy/autoresearch) cloned at `~/karpathy_autoresearch`.
 
-> **Note:** The article optimization demo is bundled inside `core/` (in `core/pipeline/` and `core/evaluator/`)
-> rather than in `domains/` for historical reasons. The training domain (`domains/train_opt/`) is the
-> recommended pattern for new domains — fully self-contained with its own runner, outer loop, and config.
+> **Note:** The article optimization demo lives in `domains/article_opt/`. The training domain
+> (`domains/train_opt/`) is the recommended pattern for new domains — fully self-contained with
+> its own runner, outer loop, and config.
 
 ## Adding a New Domain
 

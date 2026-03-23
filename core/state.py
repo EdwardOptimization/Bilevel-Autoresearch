@@ -4,8 +4,6 @@ State management for the dual-layer article optimizer.
 Two distinct state objects:
   InnerLoopState  — reset at each outer iteration boundary
   OuterLoopState  — persists across all outer iterations
-
-See docs/quality_definitions.md §"State Boundary" for the full design rationale.
 """
 from __future__ import annotations
 

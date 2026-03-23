@@ -15,6 +15,7 @@ Research session flow:
   5. Apply     — string-replace the method or append the new class into runner.py
   6. Fix       — if syntax check fails, feed error back to LLM and retry
   7. Validate  — import-check the modified runner.py
+
 """
 from __future__ import annotations
 
