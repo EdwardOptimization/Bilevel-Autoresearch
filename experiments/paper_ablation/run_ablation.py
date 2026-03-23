@@ -715,6 +715,14 @@ def main() -> None:
 
     all_group_results: dict[str, list[dict]] = {}
 
+    # Backup original train.py ONCE before any experiments
+    # Each repeat must start from this exact same baseline
+    original_train_py = args.autoresearch_dir / "train.py"
+    train_py_backup = args.autoresearch_dir / "train.py.original_backup"
+    if not train_py_backup.exists():
+        shutil.copy2(original_train_py, train_py_backup)
+        logger.info(f"Backed up original train.py to {train_py_backup}")
+
     for group in groups_to_run:
         logger.info(f"\n{'='*70}")
         logger.info(f"Starting Group {group} ({args.repeats} repeats)")
@@ -723,7 +731,11 @@ def main() -> None:
         group_results: list[dict] = []
 
         for repeat in range(1, args.repeats + 1):
-            logger.info(f"\n--- Group {group} | Repeat {repeat}/{args.repeats} ---")
+            # CRITICAL: Reset train.py to original baseline before each repeat
+            # Without this, keeps from previous repeats accumulate and the
+            # repeats are not independent (can't compute valid mean ± std)
+            shutil.copy2(train_py_backup, original_train_py)
+            logger.info(f"\n--- Group {group} | Repeat {repeat}/{args.repeats} (train.py reset to baseline) ---")
 
             try:
                 if group == "A":
