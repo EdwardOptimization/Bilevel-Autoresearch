@@ -2,7 +2,9 @@
 
 **Autoresearch that researches itself.** An outer loop autonomously discovers new mechanisms for the inner loop — not by tuning prompts, but by inventing and code-generating structural changes to the search process.
 
-[![Paper](https://img.shields.io/badge/Paper-PDF-red.svg)](paper/bilevel-autoresearch/main.pdf)
+**Paper:** [Bilevel Autoresearch: When the Optimization Loop Optimizes Itself](https://aixiv.science/abs/aixiv.260323.000006) (AISC 2026)
+
+[![Paper](https://img.shields.io/badge/Paper-PDF-red.svg)](https://aixiv.science/abs/aixiv.260323.000006)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![CI](https://github.com/EdwardOptimization/Bilevel-Autoresearch/actions/workflows/ci.yml/badge.svg)](https://github.com/EdwardOptimization/Bilevel-Autoresearch/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -59,7 +61,7 @@ class TabuSearchManager:
         return False
 ```
 
-Full ablation report: [`experiments/paper_ablation/run2_results/REPORT.md`](experiments/paper_ablation/run2_results/REPORT.md) | Paper: [`paper/bilevel-autoresearch/main.pdf`](paper/bilevel-autoresearch/main.pdf)
+Full ablation report: [`experiments/ablations/paper_ablation/run2_results/REPORT.md`](experiments/ablations/paper_ablation/run2_results/REPORT.md) | Paper: [`paper/bilevel-autoresearch/main.pdf`](paper/bilevel-autoresearch/main.pdf)
 
 ---
 
