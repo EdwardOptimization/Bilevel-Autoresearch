@@ -28,11 +28,12 @@ if _env_path.exists():
             v = v.strip().strip('"').strip("'")
             os.environ.setdefault(k.strip(), v)
 
-from core.llm_client import configure
 from core.inner_loop import InnerLoopController
-from core.outer_loop import OuterAnalyzer, OuterLoopController
-from core.runner import InnerRunner
-from core.state import OuterLoopState, InnerLoopState
+from core.llm_client import configure
+from core.state import InnerLoopState, OuterLoopState
+
+from .outer import OuterAnalyzer, OuterLoopController
+from .runner import InnerRunner
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,9 +42,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).parent.parent.parent  # project root
 ARTICLES_DIR = BASE_DIR / "articles"
-REFERENCE_DOC = BASE_DIR / "core" / "reference_frameworks.md"
+REFERENCE_DOC = Path(__file__).parent / "reference_frameworks.md"
 
 ARTICLE_FILES = {
     "article1": "article1_llm_research_depth.md",
@@ -123,7 +124,7 @@ def cmd_run(args):
         reference_doc_path=REFERENCE_DOC,
     )
 
-    logger.info(f"Starting dual-layer experiment")
+    logger.info("Starting dual-layer experiment")
     logger.info(f"Articles: {article_ids}")
     logger.info(f"Inner budget: {args.max_inner} runs/cycle | Outer budget: {args.max_outer} cycles")
 
@@ -166,7 +167,7 @@ def cmd_inner(args):
     logger.info(f"Running inner loop on {article_id} (max {args.max_inner} runs)")
     inner = inner_ctrl.run_cycle(article_id, outer_state)
 
-    print(f"\nInner loop complete:")
+    print("\nInner loop complete:")
     print(f"  Total runs: {len(inner.run_trace)}")
     print(f"  Peak score: {inner.peak_score()}/10")
     print(f"  Converged: {inner.is_converged()}")
@@ -178,7 +179,8 @@ def cmd_inner(args):
 def cmd_mechresearch(args):
     """Level 2 mechanism research — outer LLM generates a new pipeline stage."""
     from core.llm_client import PROVIDERS
-    from core.mechanism_research import MechanismResearcher
+
+    from .mechanism_research import MechanismResearcher
 
     inner_provider = args.provider or "minimax"
     inner_model = args.model or ""
@@ -298,7 +300,7 @@ def cmd_once(args):
     logger.info(f"Running single pass on {article_id}")
     result = runner.run_once(inner)
 
-    print(f"\nSingle run complete:")
+    print("\nSingle run complete:")
     print(f"  Overall: {result.overall}/10")
     print(f"  Scores: {result.stage_map}")
     print(f"  Lessons: {len(inner.inner_lessons)}")

@@ -28,7 +28,7 @@ jobs:
 
       - name: Lint with ruff
         run: |
-          ruff check core/ tests/
+          ruff check core/ domains/ tests/
 
       - name: Run tests
         run: |

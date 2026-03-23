@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 
-from .runner import InnerRunner
 from .state import InnerLoopState, OuterLoopState
 
 logger = logging.getLogger(__name__)
@@ -27,7 +26,7 @@ class InnerLoopController:
 
     def __init__(
         self,
-        runner: InnerRunner,
+        runner,
         max_iterations: int = 20,
         convergence_threshold: int = 8,
         convergence_consecutive: int = 3,

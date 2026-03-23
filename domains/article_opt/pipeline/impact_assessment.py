@@ -5,7 +5,8 @@ Also flags regressions: edits that might hurt other dimensions.
 """
 import json
 
-from ..llm_client import call_llm, parse_json_response
+from core.llm_client import call_llm, parse_json_response
+
 from .base import BaseStage
 
 SYSTEM = """You are a rigorous article reviewer predicting the impact of proposed edits.

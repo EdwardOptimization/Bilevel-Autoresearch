@@ -1,8 +1,8 @@
 """Unit tests for InnerRunner — stage management and inject_stage."""
 import pytest
 
-from core.pipeline.base import BaseStage
-from core.runner import InnerRunner
+from domains.article_opt.pipeline.base import BaseStage
+from domains.article_opt.runner import InnerRunner
 
 
 class _DummyStage(BaseStage):

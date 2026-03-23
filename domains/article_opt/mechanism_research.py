@@ -26,11 +26,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .inner_loop import InnerLoopController
-from .llm_client import LLMClient
+from core.inner_loop import InnerLoopController
+from core.llm_client import LLMClient
+from core.state import InnerLoopState, OuterLoopState
+
 from .pipeline.base import BaseStage
 from .runner import InnerRunner
-from .state import InnerLoopState, OuterLoopState
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +136,7 @@ Implement this as a Python class. The file will be saved and dynamically importe
 
 ```python
 # Available imports (use exactly these paths):
-from core.pipeline.base import BaseStage
+from domains.article_opt.pipeline.base import BaseStage
 from core.llm_client import call_llm, parse_json_response
 
 # Your class must:

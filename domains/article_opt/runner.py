@@ -12,15 +12,16 @@ import json
 import logging
 from pathlib import Path
 
+from core.llm_client import call_llm, parse_json_response
+from core.state import InnerLesson, InnerLoopState, RunResult, StageScore
+
 from .evaluator.article_evaluator import ArticleEvaluator
-from .llm_client import call_llm, parse_json_response
 from .pipeline.article_analysis import ArticleAnalysisStage
 from .pipeline.base import BaseStage
 from .pipeline.edit_planning import EditPlanningStage
 from .pipeline.impact_assessment import ImpactAssessmentStage
 from .pipeline.improvement_hypotheses import ImprovementHypothesesStage
 from .pipeline.revised_output import RevisedOutputStage
-from .state import InnerLesson, InnerLoopState, RunResult, StageScore
 
 logger = logging.getLogger(__name__)
 

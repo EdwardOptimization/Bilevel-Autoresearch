@@ -5,7 +5,8 @@ Each hypothesis targets a specific rubric weakness and proposes a concrete fix.
 """
 import json
 
-from ..llm_client import call_llm, parse_json_response
+from core.llm_client import call_llm, parse_json_response
+
 from .base import BaseStage
 
 SYSTEM = """You are a senior editor generating improvement hypotheses for an article.

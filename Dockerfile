@@ -6,9 +6,8 @@ COPY pyproject.toml ./
 RUN pip install --no-cache-dir -e .
 
 COPY core/ ./core/
-COPY cli.py ./
-COPY articles/ ./articles/
 COPY domains/ ./domains/
+COPY articles/ ./articles/
 
 # Artifacts are mounted as volumes
 VOLUME ["/app/artifacts"]
@@ -18,5 +17,5 @@ ENV PYTHONUNBUFFERED=1
 RUN useradd -m -s /bin/bash appuser
 USER appuser
 
-ENTRYPOINT ["python", "cli.py"]
+ENTRYPOINT ["python", "-m", "domains.article_opt.cli"]
 CMD ["--help"]

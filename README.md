@@ -76,11 +76,11 @@ git clone https://github.com/karpathy/autoresearch.git ~/karpathy_autoresearch
 python -m domains.train_opt.cli --provider deepseek bilevel --inner-budget 5 --outer-cycles 2
 
 # Article optimization — lightweight demo (no GPU needed, needs MINIMAX_API_KEY)
-python cli.py once --article article1                    # smoke test
-python cli.py run --articles article1 --max-inner 5 --max-outer 4   # full bilevel
+python -m domains.article_opt.cli once --article article1                    # smoke test
+python -m domains.article_opt.cli run --articles article1 --max-inner 5 --max-outer 4   # full bilevel
 
 # Use any LLM provider
-python cli.py --provider openai --outer-provider openai run --max-inner 5
+python -m domains.article_opt.cli --provider openai --outer-provider openai run --max-inner 5
 ```
 
 ---
@@ -88,22 +88,24 @@ python cli.py --provider openai --outer-provider openai run --max-inner 5
 ## Architecture
 
 ```
-cli.py                            # Entry point (article domain)
-core/                             # Bilevel framework + article optimization demo
-├── runner.py                     # InnerRunner + inject_stage()
+core/                             # Bilevel framework (shared, domain-agnostic)
 ├── inner_loop.py                 # InnerLoopController
-├── outer_loop.py                 # OuterAnalyzer + OuterLoopController
-├── mechanism_research.py         # Level 2: generate new pipeline stages as code
 ├── state.py                      # State management with isolation boundaries
-├── llm_client.py                 # Multi-provider LLM client
-├── pipeline/                     # Article demo stages (A→E) — bundled, not the framework
-└── evaluator/                    # Article demo evaluator — bundled, not the framework
+└── llm_client.py                 # Multi-provider LLM client
 domains/
+├── article_opt/                  # Article optimization demo
+│   ├── cli.py                    # Entry point: python -m domains.article_opt.cli
+│   ├── runner.py                 # InnerRunner + inject_stage()
+│   ├── outer.py                  # OuterAnalyzer + OuterLoopController
+│   ├── mechanism_research.py     # Level 2: generate new pipeline stages as code
+│   ├── pipeline/                 # Article stages (A→E)
+│   ├── evaluator/                # Article rubric evaluator
+│   └── reference_frameworks.md  # Optimization strategy reference doc
 └── train_opt/                    # Training demo: GPT pretraining optimization
     ├── runner.py                 # Inner loop with 12 agent-invented mechanisms
     ├── outer.py                  # Outer loop: trace analysis → config updates
     └── config.py                 # SearchConfig (outer loop's control surface)
-articles/                         # Article demo input data
+articles/                         # Article demo input data (root-level, referenced by path)
 experiments/                      # Ablation results and experiment records
 paper/                            # LaTeX paper (submitted to AISC2026)
 tests/                            # 44 unit tests
@@ -141,7 +143,7 @@ Each of the above is a **human-designed** mechanism change. This project asks: c
 git clone https://github.com/EdwardOptimization/Bilevel-Autoresearch.git
 cd Bilevel-Autoresearch && pip install -e ".[dev]"
 python -m pytest tests/ -v          # run tests (offline, no API key)
-ruff check core/ tests/             # lint
+ruff check core/ domains/ tests/    # lint
 ```
 
 **Add a new domain:** create `domains/your_domain/` with `runner.py`, `outer.py`, `config.py`, `cli.py`. See [`domains/README.md`](domains/README.md) and `train_opt/` as a template. Domains are self-contained — import `core.llm_client` for LLM access, but implement your own runner and outer loop.

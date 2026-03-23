@@ -5,7 +5,7 @@ It scores only the current article against the fixed 5-dimension rubric.
 Isolation is what makes the score a reliable signal for both inner and outer loops.
 """
 
-from ..llm_client import call_llm, parse_json_response
+from core.llm_client import call_llm, parse_json_response
 
 EVALUATOR_SYSTEM = """You are a rigorous academic editor evaluating an article.
 Score objectively. Do NOT be lenient — a 7/10 means genuinely good, not average.

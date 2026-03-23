@@ -7,7 +7,8 @@ Phase 2: Concrete edit plan with exact section references and new content drafts
 Lesson injection point.
 max_retries = 2 (complex stage, like V1's Stage C).
 """
-from ..llm_client import call_llm
+from core.llm_client import call_llm
+
 from .base import BaseStage
 
 TRIAGE_SYSTEM = """You are a senior editor triaging article improvements.

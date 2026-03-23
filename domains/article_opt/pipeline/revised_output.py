@@ -8,7 +8,8 @@ truncation — same pattern as V1's draft_writeup.py section-by-section approach
 """
 import re
 
-from ..llm_client import call_llm
+from core.llm_client import call_llm
+
 from .base import BaseStage
 
 SYSTEM = """You are a technical editor applying a revision plan to an article.
