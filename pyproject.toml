@@ -21,9 +21,9 @@ dev = ["pytest>=8.0", "ruff>=0.3.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["core*"]
+include = ["core*", "domains*"]
 
 [tool.ruff]
 [tool.ruff.lint]
 select = ["E", "F", "I"]
-ignore = ["E501", "E741"]  # E501: line length, E741: ambiguous var names (l/O/I)
+ignore = ["E501", "E741", "E402"]  # E501: line length, E741: ambiguous var names, E402: .env loading before imports
