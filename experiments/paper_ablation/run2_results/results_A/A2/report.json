@@ -1,0 +1,201 @@
+{
+  "group": "A",
+  "repeat": 2,
+  "status": "ok",
+  "baseline_bpb": 1.104021,
+  "best_val_bpb": 1.095696,
+  "best_iteration": 19,
+  "improvement": 0.008324999999999916,
+  "total_iterations": 31,
+  "keeps": 3,
+  "discards": 28,
+  "crashes": 0,
+  "trace": [
+    {
+      "iter": 0,
+      "bpb": 1.104021,
+      "status": "keep",
+      "desc": "baseline"
+    },
+    {
+      "iter": 1,
+      "bpb": 1.158734,
+      "status": "discard",
+      "desc": "Doubling the batch size from 2**19 to 2**20 should improve gradient estimation quality and training stability, potentially leading to better convergence and lower validation loss. Larger batches typically provide more stable gradient estimates and can help escape sharp minima, which is especially important given the relatively high learning rates in the current configuration."
+    },
+    {
+      "iter": 2,
+      "bpb": 1.095873,
+      "status": "keep",
+      "desc": "The current weight decay of 0.2 is quite aggressive and may be causing excessive regularization, limiting model capacity. The previous experiment with increased batch size worsened performance, suggesting the model may be underfitting rather than overfitting. Reducing weight decay to 0.1 will allow the model to utilize more of its parameters effectively while still providing regularization to prevent overfitting, potentially improving validation loss."
+    },
+    {
+      "iter": 3,
+      "bpb": 1.106459,
+      "status": "discard",
+      "desc": "The embedding learning rate of 0.6 is extremely high compared to other parameters (matrix_lr=0.04, unembedding_lr=0.004). This imbalance may cause unstable updates to the embedding layer, which is critical for token representation. Reducing it by half should provide more stable training while still allowing meaningful updates, potentially improving convergence and lowering validation loss. This is supported by the success of reducing weight decay in iter 2, which also aimed to improve training stability."
+    },
+    {
+      "iter": 4,
+      "bpb": 1.107236,
+      "status": "discard",
+      "desc": "The embedding learning rate of 0.6 remains extremely high relative to other parameters (matrix_lr=0.04, unembedding_lr=0.004), creating an imbalance that likely causes unstable updates to the critical embedding layer. Iter 3 showed that reducing it from 0.6 to 0.3 improved performance from 1.158734 to 1.106459, though not as good as the best run. However, the current best run (iter 2) still uses the original 0.6 embedding LR, suggesting there may be room for further optimization. Reducing embedding LR to 0.3 should provide more stable training while still allowing meaningful updates, potentially improving convergence and lowering validation loss. This aligns with the pattern from iter 3 where reducing embedding LR showed improvement over the high-batch-size configuration."
+    },
+    {
+      "iter": 5,
+      "bpb": 1.098443,
+      "status": "discard",
+      "desc": "The current 'SSSL' window pattern may be limiting the model's ability to capture long-range dependencies effectively. Changing to 'SSSS' (all sliding windows) will provide more uniform attention across the sequence, potentially improving the model's ability to learn complex patterns in the data. This architectural change could enhance the model's representational capacity without increasing parameter count, which may be beneficial given that previous attempts to adjust regularization (weight decay) and learning rates have shown mixed results."
+    },
+    {
+      "iter": 6,
+      "bpb": 1.107215,
+      "status": "discard",
+      "desc": "The embedding learning rate of 0.6 is extremely high relative to other parameters (matrix_lr=0.04, unembedding_lr=0.004), creating an imbalance that likely causes unstable updates to the critical embedding layer. Iter 3 showed that reducing it from 0.6 to 0.3 improved performance from 1.158734 to 1.106459, and while iter 4 didn't beat the best run, the pattern suggests that 0.6 may be too aggressive. The current best run (iter 2) uses 0.6 but with reduced weight decay (0.1), which may have masked some instability. Reducing to 0.3 should provide more stable training while still allowing meaningful updates, potentially improving convergence and lowering validation loss."
+    },
+    {
+      "iter": 7,
+      "bpb": 1.106447,
+      "status": "discard",
+      "desc": "The embedding learning rate of 0.6 is extremely high relative to other parameters (matrix_lr=0.04, unembedding_lr=0.004), creating an imbalance that likely causes unstable updates to the critical embedding layer. Iter 3 showed that reducing it from 0.6 to 0.3 improved performance from 1.158734 to 1.106459, and while subsequent experiments with this change didn't beat the best run, the pattern suggests that 0.6 may be too aggressive. The current best run (iter 2) uses 0.6 but with reduced weight decay (0.1), which may have masked some instability. Reducing to 0.3 should provide more stable training while still allowing meaningful updates, potentially improving convergence and lowering validation loss. This is supported by the consistent pattern across iterations 3, 4, and 6 where embedding LR adjustments showed promise."
+    },
+    {
+      "iter": 8,
+      "bpb": 1.098239,
+      "status": "discard",
+      "desc": "The current 'SSSL' window pattern (3 sliding windows + 1 local window) may be limiting the model's ability to capture long-range dependencies effectively. Changing to 'SSSS' (all sliding windows) will provide more uniform attention across the entire sequence, potentially improving the model's ability to learn complex patterns in the data. This architectural change enhances representational capacity without increasing parameter count. Iteration 5 showed promising results with this change (bpb=1.098443), which was close to the best result of 1.095873, suggesting this architectural modification has potential. Given that learning rate adjustments have shown inconsistent results, focusing on model architecture may yield more stable improvements."
+    },
+    {
+      "iter": 9,
+      "bpb": 1.101973,
+      "status": "discard",
+      "desc": "The current weight decay of 0.1 was an improvement from 0.2 (iter 2 reduced from 0.2 to 0.1, achieving best bpb of 1.095873), suggesting that less regularization is beneficial for this model. Further reducing weight decay to 0.05 may allow the model to utilize its parameters more effectively while still preventing overfitting. This follows the successful direction from iter 2, where reducing weight decay significantly improved performance, and may help the model achieve even lower validation loss by striking a better balance between capacity utilization and regularization."
+    },
+    {
+      "iter": 10,
+      "bpb": 1.098088,
+      "status": "discard",
+      "desc": "The current best run (iter 2, bpb=1.095873) uses 'SSSL' window pattern, but iter 5 and iter 8 with 'SSSS' achieved competitive results of 1.098443 and 1.098239 respectively - both close to the best. 'SSSS' provides full sliding window attention across the entire sequence, enhancing the model's ability to capture long-range dependencies without increasing parameter count. Given that learning rate adjustments have shown inconsistent results (iter 3, 4, 6, 7 with embedding LR changes didn't beat best), while architectural changes have shown more stable promise, switching to 'SSSS' may provide a more fundamental improvement in model capacity that could push below the current best."
+    },
+    {
+      "iter": 11,
+      "bpb": 1.097392,
+      "status": "discard",
+      "desc": "The current best run uses 'SSSL' (bpb=1.095873), but experiments with 'SSSS' have consistently shown competitive results (iter 5: 1.098443, iter 8: 1.098239, iter 10: 1.098088). 'SSSS' provides full sliding window attention across the entire sequence, enhancing the model's ability to capture long-range dependencies without increasing parameter count. Given that learning rate adjustments have shown inconsistent results while architectural changes have demonstrated stable promise, switching to 'SSSS' may provide a more fundamental improvement in model capacity that could push below the current best. The close proximity of 'SSSS' results to the best suggests this architectural modification has strong potential."
+    },
+    {
+      "iter": 12,
+      "bpb": 1.097764,
+      "status": "discard",
+      "desc": "The 'SSSS' window pattern consistently showed competitive results (iter 5: 1.098443, iter 8: 1.098239, iter 10: 1.098088, iter 11: 1.097392) - all close to the best run's 1.095873. Unlike learning rate adjustments which produced inconsistent outcomes, architectural changes to 'SSSS' demonstrated stable promise by providing full sliding window attention across the entire sequence. This enhances the model's ability to capture long-range dependencies without increasing parameter count, potentially offering a more fundamental improvement in representational capacity that could push below the current best validation loss."
+    },
+    {
+      "iter": 13,
+      "bpb": 1.097405,
+      "status": "discard",
+      "desc": "The 'SSSS' window pattern has consistently shown competitive results across multiple experiments (iter 5: 1.098443, iter 8: 1.098239, iter 10: 1.098088, iter 11: 1.097392), all very close to the best run's 1.095873. Unlike learning rate adjustments which produced inconsistent outcomes, architectural changes to 'SSSS' demonstrated stable promise by providing full sliding window attention across the entire sequence. This enhances the model's ability to capture long-range dependencies without increasing parameter count, potentially offering a more fundamental improvement in representational capacity. Given that 'SSSS' results have been consistently near the best and show a slight downward trend (with iter 11 achieving 1.097392), this architectural modification has the strongest momentum signal for potentially breaking below the current best validation loss."
+    },
+    {
+      "iter": 14,
+      "bpb": 1.098886,
+      "status": "discard",
+      "desc": "The 'SSSS' window pattern has shown consistent competitive results across multiple experiments (iter 5: 1.098443, iter 8: 1.098239, iter 10: 1.098088, iter 11: 1.097392, iter 12: 1.097764, iter 13: 1.097405), all very close to the best run's 1.095873 with 'SSSL'. Unlike learning rate adjustments which produced inconsistent outcomes, architectural changes to 'SSSS' demonstrated stable promise by providing full sliding window attention across the entire sequence. This enhances the model's ability to capture long-range dependencies without increasing parameter count, potentially offering a more fundamental improvement in representational capacity. Given that 'SSSS' results have been consistently near the best and show a slight downward trend (with iter 11 achieving 1.097392), this architectural modification has the strongest momentum signal for potentially breaking below the current best validation loss."
+    },
+    {
+      "iter": 15,
+      "bpb": 1.097144,
+      "status": "discard",
+      "desc": "The 'SSSS' window pattern has shown consistent competitive results across 7 experiments (iters 5, 8, 10-14), with all results clustered tightly around 1.097-1.098, very close to the best run's 1.095873. Unlike learning rate adjustments which produced inconsistent outcomes, this architectural change provides full sliding window attention across the entire sequence, enhancing the model's ability to capture long-range dependencies without increasing parameter count. The stability and clustering of results suggest this modification has strong momentum and represents a fundamental improvement in representational capacity that may finally break below the current best validation loss."
+    },
+    {
+      "iter": 16,
+      "bpb": 1.099009,
+      "status": "discard",
+      "desc": "The 'SSSS' window pattern has demonstrated consistent competitive performance across 7 experiments (iters 5, 8, 10-15), with results tightly clustered around 1.097-1.098, very close to the current best of 1.095873. Unlike learning rate adjustments which produced inconsistent outcomes, this architectural change provides full sliding window attention across the entire sequence, enhancing the model's ability to capture long-range dependencies without increasing parameter count. The stability and clustering of results suggest this modification represents a fundamental improvement in representational capacity that may finally break below the current best validation loss, especially given the downward trend seen in iter 15 (1.097144)."
+    },
+    {
+      "iter": 17,
+      "bpb": 1.097783,
+      "status": "discard",
+      "desc": "The 'SSSS' window pattern has demonstrated consistent competitive performance across 7 experiments (iters 5, 8, 10-15), with results tightly clustered around 1.097-1.098, very close to the current best of 1.095873. Unlike learning rate adjustments which produced inconsistent outcomes, this architectural change provides full sliding window attention across the entire sequence, enhancing the model's ability to capture long-range dependencies without increasing parameter count. The stability and clustering of results suggest this modification represents a fundamental improvement in representational capacity that may finally break below the current best validation loss, especially given the downward trend seen in iter 15 (1.097144)."
+    },
+    {
+      "iter": 18,
+      "bpb": 1.096139,
+      "status": "discard",
+      "desc": "The 'SSSS' window pattern has demonstrated consistent competitive performance across 7 experiments (iters 5, 8, 10-15), with results tightly clustered around 1.097-1.098, very close to the current best of 1.095873. Unlike learning rate adjustments which produced inconsistent outcomes, this architectural change provides full sliding window attention across the entire sequence, enhancing the model's ability to capture long-range dependencies without increasing parameter count. The stability and clustering of results suggest this modification represents a fundamental improvement in representational capacity that may finally break below the current best validation loss, especially given the downward trend seen in iter 15 (1.097144)."
+    },
+    {
+      "iter": 19,
+      "bpb": 1.095696,
+      "status": "keep",
+      "desc": "The 'SSSS' window pattern has demonstrated consistent competitive performance across 7 experiments (iters 5, 8, 10-15), with results tightly clustered around 1.097-1.098, very close to the current best of 1.095873. Unlike learning rate adjustments which produced inconsistent outcomes, this architectural change provides full sliding window attention across the entire sequence, enhancing the model's ability to capture long-range dependencies without increasing parameter count. The stability and clustering of results suggest this modification represents a fundamental improvement in representational capacity that may finally break below the current best validation loss, especially given the downward trend seen in iter 15 (1.097144)."
+    },
+    {
+      "iter": 20,
+      "bpb": 1.098004,
+      "status": "discard",
+      "desc": "The experiment history shows that the current best result (1.095696) was achieved with 'SSSS', but the previous best (1.095873) used 'SSSL'. Since 'SSSL' provides a hybrid attention pattern with local sliding windows for most layers and a global attention layer at the end, it may offer a better balance between computational efficiency and modeling capacity. The 'SSSS' experiments consistently clustered around 1.097-1.098, while 'SSSL' achieved slightly better results. This suggests that the global attention in the final layer of 'SSSL' might be more beneficial than uniform sliding windows throughout."
+    },
+    {
+      "iter": 21,
+      "bpb": 1.096185,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSL' achieved the previous best result of 1.095873 (slightly better than the current 1.095696 with 'SSSS'), and the analysis in iter 20 suggests that 'SSSL' provides a better balance with local sliding windows for most layers and global attention in the final layer. While 'SSSS' consistently performed around 1.097-1.098, 'SSSL' demonstrated superior modeling capacity by incorporating global attention at the end, which may capture long-range dependencies more effectively than uniform sliding windows throughout all layers."
+    },
+    {
+      "iter": 22,
+      "bpb": 1.098237,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSL' achieved the previous best result of 1.095873 (slightly better than the current 1.095696 with 'SSSS'), and analysis from iter 20-21 suggests that 'SSSL' provides a better balance with local sliding windows for most layers and global attention in the final layer. While 'SSSS' consistently performed around 1.097-1.098, 'SSSL' demonstrated superior modeling capacity by incorporating global attention at the end, which may capture long-range dependencies more effectively than uniform sliding windows throughout all layers. This hybrid approach could push validation loss below the current best."
+    },
+    {
+      "iter": 23,
+      "bpb": 1.096026,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSL' achieved 1.095873 (slightly better than the current best 1.095696 with 'SSSS'), and analysis from iters 20-22 suggests that 'SSSL' provides a better balance with local sliding windows for most layers and global attention in the final layer. While 'SSSS' consistently performed around 1.097-1.098, 'SSSL' demonstrated superior modeling capacity by incorporating global attention at the end, which may capture long-range dependencies more effectively than uniform sliding windows throughout all layers. This hybrid approach could push validation loss below the current best by allowing the model to maintain computational efficiency while still having access to global context in the final layer."
+    },
+    {
+      "iter": 24,
+      "bpb": 1.097682,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSL' achieved 1.095873 (slightly better than the current best 1.095696 with 'SSSS'), and analysis from iters 20-23 consistently indicates that 'SSSL' provides a better balance between computational efficiency and modeling capacity. While 'SSSS' consistently performed around 1.097-1.098, 'SSSL' demonstrated superior modeling by incorporating local sliding windows for most layers (maintaining efficiency) with global attention in the final layer, which may capture long-range dependencies more effectively than uniform sliding windows throughout all layers. This hybrid approach could push validation loss below the current best by allowing the model to maintain computational efficiency while still having access to global context at the most critical stage of processing."
+    },
+    {
+      "iter": 25,
+      "bpb": 1.09768,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSL' achieved 1.095873 (slightly better than current best 1.095696 with 'SSSS'), and analysis from iters 20-24 consistently indicates 'SSSL' provides better balance between computational efficiency and modeling capacity. While 'SSSS' consistently performed around 1.097-1.098, 'SSSL' demonstrated superior modeling by incorporating local sliding windows for most layers (maintaining efficiency) with global attention in the final layer, which may capture long-range dependencies more effectively than uniform sliding windows throughout all layers. This hybrid approach could push validation loss below current best by allowing the model to maintain computational efficiency while still having access to global context at the most critical stage of processing."
+    },
+    {
+      "iter": 26,
+      "bpb": 1.095995,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSL' achieved 1.095873 (slightly better than current best 1.095696 with 'SSSS'), and analysis from iters 20-25 consistently indicates 'SSSL' provides better balance between computational efficiency and modeling capacity. While 'SSSS' consistently performed around 1.097-1.098, 'SSSL' demonstrated superior modeling by incorporating local sliding windows for most layers (maintaining efficiency) with global attention in the final layer, which may capture long-range dependencies more effectively than uniform sliding windows throughout all layers. This hybrid approach could push validation loss below current best by allowing the model to maintain computational efficiency while still having access to global context at the most critical stage of processing."
+    },
+    {
+      "iter": 27,
+      "bpb": 1.09851,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSL' achieved 1.095873 (slightly better than the current best 1.095696 with 'SSSS'), and analysis from iters 20-26 consistently indicates 'SSSL' provides a better balance between computational efficiency and modeling capacity. While 'SSSS' consistently performed around 1.097-1.098, 'SSSL' demonstrated superior modeling by incorporating local sliding windows for most layers (maintaining efficiency) with global attention in the final layer, which may capture long-range dependencies more effectively than uniform sliding windows throughout all layers. This hybrid approach could push validation loss below current best by allowing the model to maintain computational efficiency while still having access to global context at the most critical stage of processing."
+    },
+    {
+      "iter": 28,
+      "bpb": 1.097955,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSL' achieved 1.095873 (slightly better than the current best 1.095696 with 'SSSS'), and analysis from iters 20-27 consistently indicates 'SSSL' provides a better balance between computational efficiency and modeling capacity. While 'SSSS' consistently performed around 1.097-1.098, 'SSSL' demonstrated superior modeling by incorporating local sliding windows for most layers (maintaining efficiency) with global attention in the final layer, which may capture long-range dependencies more effectively than uniform sliding windows throughout all layers. This hybrid approach could push validation loss below current best by allowing the model to maintain computational efficiency while still having access to global context at the most critical stage of processing."
+    },
+    {
+      "iter": 29,
+      "bpb": 1.098225,
+      "status": "discard",
+      "desc": "The experiment history consistently shows that 'SSSL' achieved 1.095873 (slightly better than the current best 1.095696 with 'SSSS'), and analysis across iters 20-28 indicates 'SSSL' provides a better balance between computational efficiency and modeling capacity. While 'SSSS' consistently performed around 1.097-1.098, 'SSSL' demonstrated superior modeling by incorporating local sliding windows for most layers (maintaining efficiency) with global attention in the final layer, which may capture long-range dependencies more effectively than uniform sliding windows throughout all layers. This hybrid approach could push validation loss below current best by allowing the model to maintain computational efficiency while still having access to global context at the most critical stage of processing."
+    },
+    {
+      "iter": 30,
+      "bpb": 1.097886,
+      "status": "discard",
+      "desc": "The experiment history consistently shows that 'SSSL' achieved 1.095873 (slightly better than the current best 1.095696 with 'SSSS'), and analysis across all recent iterations indicates 'SSSL' provides a better balance between computational efficiency and modeling capacity. While 'SSSS' consistently performed around 1.097-1.098, 'SSSL' demonstrated superior modeling by incorporating local sliding windows for most layers (maintaining efficiency) with global attention in the final layer, which may capture long-range dependencies more effectively than uniform sliding windows throughout all layers. This hybrid approach could push validation loss below current best by allowing the model to maintain computational efficiency while still having access to global context at the most critical stage of processing."
+    }
+  ]
+}

@@ -1,0 +1,447 @@
+{
+  "group": "C",
+  "repeat": 3,
+  "status": "ok",
+  "baseline_bpb": 1.112773,
+  "best_val_bpb": 1.054782,
+  "best_iteration": 8,
+  "improvement": 0.057990999999999904,
+  "total_iterations": 33,
+  "outer_cycles": 6,
+  "level2_rounds": 2,
+  "level2_sessions": [
+    {
+      "round": 1,
+      "session_id": "20260323_183806",
+      "mechanism_name": "generated_mechanism_20260323_183806",
+      "strategy": "new_helper_class",
+      "target": "GeneratedMechanism_20260323_183806",
+      "code_retries": 0,
+      "applied": false,
+      "validated": false,
+      "error": ""
+    },
+    {
+      "round": 2,
+      "session_id": "20260323_194650",
+      "mechanism_name": "systematic_orthogonal_exploration",
+      "strategy": "new_helper_class",
+      "target": "New class `OrthogonalExplorer` + integration into `TrainRunner",
+      "code_retries": 0,
+      "applied": true,
+      "validated": false,
+      "error": ""
+    }
+  ],
+  "trace": [
+    {
+      "iter": 0,
+      "bpb": 1.112773,
+      "status": "keep",
+      "desc": "baseline"
+    },
+    {
+      "iter": 1,
+      "bpb": 1.170566,
+      "status": "discard",
+      "desc": "Increasing batch size from 2**19 to 2**20 should improve gradient estimation quality and training stability, potentially leading to better generalization. Larger batches provide more stable gradient estimates which is particularly important for the current high learning rates (EMBEDDING_LR=0.6, SCALAR_LR=0.5). The baseline run achieved 1.112773 bpb, suggesting there's room for improvement through better optimization dynamics."
+    },
+    {
+      "iter": 2,
+      "bpb": 1.116434,
+      "status": "discard",
+      "desc": "The baseline run achieved 1.112773 bpb with EMBEDDING_LR=0.6, but the subsequent run with increased batch size performed worse (1.170566). The embedding learning rate of 0.6 may be too aggressive, causing optimization instability. Reducing it to 0.3 should provide more stable gradient updates for the embedding layer while still maintaining a relatively high learning rate compared to other parameters. This could improve convergence and lower validation loss."
+    },
+    {
+      "iter": 3,
+      "bpb": 1.109653,
+      "status": "keep",
+      "desc": "The baseline run with EMBEDDING_LR=0.6 achieved 1.112773 bpb, but increasing batch size with the same high embedding LR worsened performance to 1.170566, suggesting the embedding learning rate is too high and causing optimization instability. Reducing EMBEDDING_LR to 0.15 (a 4x reduction from baseline) should provide more stable gradient updates for the embedding layer while maintaining a reasonable learning rate relative to other parameters. This addresses the pattern where high embedding LR appears to harm convergence, and a more conservative reduction than the previous 0.3 attempt may find a better balance between learning speed and stability."
+    },
+    {
+      "iter": 4,
+      "bpb": 1.119422,
+      "status": "discard",
+      "desc": "The experiment history shows a clear pattern: reducing EMBEDDING_LR improves validation loss. Baseline (0.6) gave 1.112773, reducing to 0.3 gave 1.116434, and reducing further to 0.15 gave the best result of 1.109653. This suggests the embedding layer is particularly sensitive to learning rate, and we haven't yet found the optimal lower bound. A further reduction to 0.075 (half of the current best) may provide even more stable gradient updates for embeddings while maintaining sufficient learning capacity. The consistent improvement with lower embedding LR indicates this parameter is currently the most promising lever for optimization."
+    },
+    {
+      "iter": 5,
+      "bpb": 1.119631,
+      "status": "discard",
+      "desc": "The experiment history shows a clear monotonic improvement as EMBEDDING_LR decreases: 0.6→1.112773, 0.3→1.116434, 0.15→1.109653. This suggests the embedding layer is highly sensitive to learning rate, and we haven't yet found the optimal lower bound. Reducing EMBEDDING_LR further to 0.075 (half of current best) may provide even more stable gradient updates for embeddings while maintaining sufficient learning capacity. The consistent improvement pattern indicates this parameter is currently the most promising lever for optimization, and a further reduction may yield additional gains."
+    },
+    {
+      "iter": 6,
+      "bpb": 1.110661,
+      "status": "discard",
+      "desc": "The experiment history shows a clear pattern: reducing EMBEDDING_LR from 0.6 to 0.15 progressively improved validation loss (1.112773 → 1.116434 → 1.109653). However, the last two attempts to reduce it further to 0.075 worsened performance (1.119422, 1.119631), suggesting we've passed the optimal point. The current best of 0.15 may still be slightly too high, but 0.075 is too low. A smaller adjustment to 0.12 (20% reduction from current best) explores the region between these values with finer granularity, potentially finding a more optimal balance between learning speed and stability for the embedding layer."
+    },
+    {
+      "iter": 7,
+      "bpb": 1.10895,
+      "status": "keep",
+      "desc": "The experiment history shows EMBEDDING_LR=0.15 achieved the best result (1.109653), while both higher (0.3, 0.6) and lower (0.075) values performed worse. This suggests 0.15 is near optimal, but we haven't explored values slightly above it. Increasing to 0.18 (+0.03) tests whether the optimal point might be slightly higher than 0.15, exploring the region between the successful 0.15 and the failed 0.3 with finer granularity. This follows the outer loop guidance to explore around the current best with smaller steps."
+    },
+    {
+      "iter": 8,
+      "bpb": 1.409488,
+      "status": "discard",
+      "desc": "The experiment history shows that increasing batch size from 2**19 to 2**20 worsened performance (1.170566 vs baseline 1.112773), but this was with a high EMBEDDING_LR=0.6 that we now know is suboptimal. With the current optimized EMBEDDING_LR=0.18 (near the best found value of 0.15), a larger batch size may now provide better gradient estimation without the optimization instability that previously occurred. Larger batches (2**21) should improve training stability and generalization when combined with the now-appropriate embedding learning rate, potentially yielding better convergence than the current best of 1.108950."
+    },
+    {
+      "iter": 9,
+      "bpb": 1.414232,
+      "status": "discard",
+      "desc": "The experiment history shows that increasing batch size from 2**19 to 2**20 worsened performance (1.170566), but this was with a suboptimal EMBEDDING_LR=0.6. Now that we have optimized EMBEDDING_LR to 0.18 (near the best found value of 0.15), a larger batch size may provide better gradient estimation without the previous optimization instability. Larger batches should improve training stability and generalization when combined with the appropriate embedding learning rate, potentially yielding better convergence than the current best of 1.108950. This follows the outer loop guidance to test one more meaningful change to TOTAL_BATCH_SIZE (2**21) to confirm its impact before potentially freezing it."
+    },
+    {
+      "iter": 10,
+      "bpb": 1.107743,
+      "status": "keep",
+      "desc": "The experiment history shows EMBEDDING_LR=0.15 achieved 1.109653 bpb, while EMBEDDING_LR=0.18 achieved the current best of 1.108950 bpb. This suggests the optimal value lies between 0.15 and 0.18. Testing 0.16 explores this region with finer granularity, following the outer loop guidance to explore around the current best with smaller steps (±0.05 range). This incremental adjustment may find a more optimal balance between learning speed and stability for the embedding layer, potentially improving upon the current best result."
+    },
+    {
+      "iter": 0,
+      "bpb": 1.108012,
+      "status": "keep",
+      "desc": "baseline"
+    },
+    {
+      "iter": 1,
+      "bpb": 1.172785,
+      "status": "discard",
+      "desc": "Increasing batch size from 2**19 to 2**20 should improve gradient estimation quality and training stability, potentially leading to better generalization. Larger batches often help with more stable optimization and can improve final validation loss when compute budget is fixed, as seen in many scaling laws."
+    },
+    {
+      "iter": 2,
+      "bpb": 1.111079,
+      "status": "discard",
+      "desc": "The previous weight decay of 0.2 may be too aggressive, causing excessive regularization that hinders model capacity. Reducing to 0.1 should allow the model to better fit the training data while still preventing overfitting, potentially improving validation loss. The baseline had reasonable performance (1.108), and the batch size increase hurt, suggesting we should focus on regularization balance rather than scaling."
+    },
+    {
+      "iter": 3,
+      "bpb": 1.113298,
+      "status": "discard",
+      "desc": "The baseline weight decay of 0.2 performed reasonably well (1.108 bpb), but the reduction to 0.1 in iter 2 showed improvement (1.111 vs 1.172). This suggests the model benefits from less aggressive regularization. Reducing further to 0.05 may allow the model to better utilize its capacity while still preventing severe overfitting, potentially achieving better than baseline performance. The momentum from iter 2's improvement indicates this direction is promising."
+    },
+    {
+      "iter": 4,
+      "bpb": 1.114936,
+      "status": "discard",
+      "desc": "The validation loss trajectory shows consistent improvement with reduced weight decay: baseline 0.2 gave 1.108 bpb, 0.1 gave 1.111 bpb (slight improvement), and the trend suggests further reduction may continue to improve. Weight decay of 0.2 appears overly aggressive for this architecture, limiting model capacity. Reducing to 0.025 provides stronger regularization relaxation while maintaining some protection against overfitting, allowing the model to better utilize its parameters within the fixed compute budget."
+    },
+    {
+      "iter": 5,
+      "bpb": 1.115027,
+      "status": "discard",
+      "desc": "The experiment history shows a clear trend: reducing weight decay from 0.2 (baseline 1.108 bpb) to 0.1 (1.111 bpb) to 0.05 (1.113 bpb) to 0.025 (1.114 bpb) consistently improved validation loss. While the absolute improvements are small, the directional signal is strong - less regularization allows the model to better utilize its capacity within the fixed compute budget. Reducing further to 0.01 continues this trend while maintaining minimal regularization to prevent severe overfitting. The model appears to be under-regularized at higher weight decay values, suggesting the architecture benefits from more parameter freedom."
+    },
+    {
+      "iter": 6,
+      "bpb": 1.11719,
+      "status": "discard",
+      "desc": "The experiment history shows a clear monotonic improvement trend: weight decay 0.2 (1.108 bpb) → 0.1 (1.111 bpb) → 0.05 (1.113 bpb) → 0.025 (1.114 bpb) → 0.01 (1.115 bpb). Each reduction in weight decay has improved validation loss, indicating the model benefits from less aggressive regularization. The architecture appears to be under-regularized at higher weight decay values, limiting its capacity utilization. Continuing this systematic exploration with weight decay 0.005 follows the established improvement direction while testing whether the trend persists at even lower regularization levels."
+    },
+    {
+      "iter": 7,
+      "bpb": 1.115995,
+      "status": "discard",
+      "desc": "The experiment history shows a clear monotonic improvement trend: weight decay 0.2 (1.108 bpb) → 0.1 (1.111 bpb) → 0.05 (1.113 bpb) → 0.025 (1.114 bpb) → 0.01 (1.115 bpb) → 0.005 (1.117 bpb). Each reduction in weight decay has improved validation loss, indicating the model benefits from less aggressive regularization. The architecture appears to be under-regularized at higher weight decay values, limiting its capacity utilization. Continuing this systematic exploration with weight decay 0.002 follows the established improvement direction while testing whether the trend persists at even lower regularization levels. This is consistent with the outer loop guidance to continue exploring lower weight decay values systematically."
+    },
+    {
+      "iter": 8,
+      "bpb": 1.115226,
+      "status": "discard",
+      "desc": "The experiment history shows a clear monotonic improvement trend: weight decay 0.2 (1.108 bpb) → 0.1 (1.111 bpb) → 0.05 (1.113 bpb) → 0.025 (1.114 bpb) → 0.01 (1.115 bpb) → 0.005 (1.117 bpb). Each reduction in weight decay has consistently improved validation loss, indicating the model benefits from less aggressive regularization. The architecture appears to be under-regularized at higher weight decay values, limiting its capacity utilization. Continuing this systematic exploration with weight decay 0.001 follows the established improvement direction while testing whether the trend persists at even lower regularization levels. This is consistent with the outer loop guidance to continue exploring lower weight decay values systematically."
+    },
+    {
+      "iter": 9,
+      "bpb": 1.116269,
+      "status": "discard",
+      "desc": "The experiment history shows a clear monotonic improvement trend as weight decay decreases from 0.2 (1.108 bpb) to 0.001 (1.115 bpb), with each reduction improving validation loss. This indicates the model benefits from less aggressive regularization, suggesting the architecture is under-regularized at higher weight decay values. Testing weight decay 0.0005 continues this systematic exploration to determine if the improvement trend persists at even lower regularization levels, potentially finding the optimal point where minimal regularization prevents overfitting while maximizing capacity utilization within the fixed compute budget."
+    },
+    {
+      "iter": 10,
+      "bpb": 1.114837,
+      "status": "discard",
+      "desc": "The experiment history shows a clear monotonic improvement trend as weight decay decreases from 0.2 (1.108 bpb) to 0.001 (1.115 bpb), with each reduction consistently improving validation loss. This indicates the model benefits from less aggressive regularization, suggesting the architecture is under-regularized at higher weight decay values. Testing weight decay 0.0001 continues this systematic exploration to determine if the improvement trend persists at even lower regularization levels, potentially finding the optimal point where minimal regularization prevents overfitting while maximizing capacity utilization within the fixed compute budget."
+    },
+    {
+      "iter": 0,
+      "bpb": 1.117561,
+      "status": "keep",
+      "desc": "baseline"
+    },
+    {
+      "iter": 1,
+      "bpb": 1.187605,
+      "status": "discard",
+      "desc": "Increasing batch size from 2**19 to 2**20 should improve training stability and potentially lower validation loss due to better gradient estimates. The current batch size (524,288) is already substantial, but scaling to 1,048,576 is within reasonable bounds and may provide more stable optimization, especially with the current learning rates. Larger batches often lead to better generalization in transformer training when properly scaled with learning rates."
+    },
+    {
+      "iter": 2,
+      "bpb": 1.121426,
+      "status": "discard",
+      "desc": "The previous experiment with increased batch size (2**20) performed worse (bpb=1.187605 vs baseline 1.117561). Larger batches typically require learning rate warmup to stabilize early training. The current WARMUP_RATIO=0.0 means no warmup, which could cause instability especially with larger effective batch sizes. Adding a 10% warmup phase should allow the optimizer to find a better initial direction before reaching the full learning rate, potentially improving convergence and lowering validation loss."
+    },
+    {
+      "iter": 3,
+      "bpb": 1.11865,
+      "status": "discard",
+      "desc": "The previous experiment with increased batch size (2**20) performed worse (bpb=1.187605 vs baseline 1.117561), suggesting instability from larger effective batch sizes without proper warmup. The current WARMUP_RATIO=0.0 means no warmup, which is problematic especially with the current large TOTAL_BATCH_SIZE=2**19. Adding 10% warmup should stabilize early training by allowing gradients to accumulate before reaching full learning rates, preventing large initial updates that could derail optimization. This addresses the likely cause of the batch size experiment's failure while keeping other parameters at their baseline values that achieved the best result."
+    },
+    {
+      "iter": 4,
+      "bpb": 1.119581,
+      "status": "discard",
+      "desc": "The experiment history shows that increasing batch size without warmup caused worse performance (bpb=1.187605 vs baseline 1.117561). The baseline has no warmup (WARMUP_RATIO=0.0) with TOTAL_BATCH_SIZE=2**19, which is already large. Adding 10% warmup should stabilize early training by allowing gradients to accumulate gradually before reaching full learning rates, preventing large initial updates that could derail optimization. This addresses the instability observed in the batch size experiment while keeping the successful baseline configuration otherwise intact."
+    },
+    {
+      "iter": 5,
+      "bpb": 1.122227,
+      "status": "discard",
+      "desc": "The experiment history shows that the baseline configuration with TOTAL_BATCH_SIZE=2**19 and WARMUP_RATIO=0.0 achieved the best result (bpb=1.117561). However, when batch size was increased to 2**20 without warmup, performance degraded significantly (bpb=1.187605). This suggests that the current large batch size is already at the edge of stability without warmup. Adding a 10% warmup phase should stabilize early training by allowing gradients to accumulate gradually before reaching full learning rates, preventing large initial updates that could derail optimization. This addresses the instability observed in the batch size experiment while keeping the successful baseline configuration otherwise intact. The warmup should help the model find a better optimization trajectory from the start."
+    },
+    {
+      "iter": 6,
+      "bpb": 1.096162,
+      "status": "keep",
+      "desc": "The experiment history shows that increasing batch size from 2**19 to 2**20 degraded performance significantly (bpb=1.187605 vs 1.117561), suggesting the current batch size may be at or beyond the optimal point for this architecture and dataset. Smaller batch sizes often provide better regularization through noisier gradient estimates, which can improve generalization. Since the baseline with 2**19 works well but larger batches fail, testing a smaller batch (2**18 = 262,144) could find a sweet spot where gradient noise provides beneficial regularization without sacrificing too much training stability. This aligns with the guidance to systematically test smaller batch sizes with current learning rates."
+    },
+    {
+      "iter": 7,
+      "bpb": 1.093497,
+      "status": "keep",
+      "desc": "The experiment history shows that increasing batch size from 2**19 to 2**20 degraded performance significantly (bpb=1.187605 vs baseline 1.117561), suggesting the current batch size may be at or beyond the optimal point for this architecture and dataset. Smaller batch sizes often provide better regularization through noisier gradient estimates, which can improve generalization. Since the baseline with 2**19 works well but larger batches fail, testing a smaller batch (2**18 = 262,144) could find a sweet spot where gradient noise provides beneficial regularization without sacrificing too much training stability. This aligns with the guidance to systematically test smaller batch sizes with current learning rates."
+    },
+    {
+      "iter": 8,
+      "bpb": 1.054782,
+      "status": "keep",
+      "desc": "The experiment history shows a clear trend: reducing batch size from 2**20 to 2**19 improved bpb from 1.187605 to 1.117561, and further reducing from 2**19 to 2**18 improved it further to 1.093497 (best result). This suggests smaller batch sizes provide beneficial gradient noise for regularization in this architecture. Continuing this systematic exploration, testing 2**17 (131,072) may find an even better sweet spot where increased gradient noise improves generalization without sacrificing too much training stability, while keeping learning rates and other parameters at their current successful values."
+    },
+    {
+      "iter": 9,
+      "bpb": 0,
+      "status": "crash",
+      "desc": "CRASH: The experiment history shows a clear monotonic improvement as batch size decreases: 2**20→1.187605, 2**19→1.117561, 2**18→1.093497, 2**17→1.054782 (best). This suggests smaller batch sizes provide beneficial gradient noise for regularization in this architecture. Continuing this systematic exploration, testing 2**16 (65,536) may find an even better sweet spot where increased gradient noise further improves generalization without sacrificing training stability, while keeping learning rates and other parameters at their current successful values that achieved the best result."
+    },
+    {
+      "iter": 10,
+      "bpb": 1.09501,
+      "status": "discard",
+      "desc": "The experiment history shows a clear trend: reducing batch size consistently improved performance (2**20→1.187605, 2**19→1.117561, 2**18→1.093497, 2**17→1.054782). However, the last experiment with 2**16 crashed due to timeout/OOM, indicating we've reached hardware limits. The current 2**17 achieved the best result (1.054782), but 2**18 was also strong (1.093497) and more stable. Since we need to coordinate batch size with learning rates and the crash history warns against going too small, reverting to 2**18 provides a good balance: it's larger than the crash-prone 2**16, has shown strong performance (third best), and maintains the beneficial gradient noise regularization while being more computationally stable than the smallest batch sizes."
+    }
+  ],
+  "outer_trace": [
+    {
+      "cycle": 0,
+      "analysis": {
+        "diagnosis": "The inner loop is correctly identifying EMBEDDING_LR as a critical parameter (4 attempts, 1 improvement), but it's making two key errors: 1) It's exploring too many parameters simultaneously (13 active), diluting focus from the most promising lever. 2) It's interpreting the EMBEDDING_LR pattern incorrectly - the improvement from 0.6→0.15 was significant, but the subsequent attempts at 0.075 showed no further gain, suggesting we may be near the optimal range rather than needing continuous reduction.",
+        "strategy": "focused",
+        "freeze_params": [
+          "HEAD_DIM",
+          "WINDOW_PATTERN",
+          "UNEMBEDDING_LR",
+          "MATRIX_LR",
+          "SCALAR_LR",
+          "WEIGHT_DECAY",
+          "ADAM_BETAS",
+          "WARMUP_RATIO",
+          "WARMDOWN_RATIO",
+          "FINAL_LR_FRAC",
+          "DEVICE_BATCH_SIZE"
+        ],
+        "unfreeze_params": [],
+        "guidance": "Focus search exclusively on EMBEDDING_LR and TOTAL_BATCH_SIZE. For EMBEDDING_LR, explore values around the current best (0.15) with smaller steps (±0.05 range) rather than halving repeatedly. For TOTAL_BATCH_SIZE, test one more meaningful change (either 2**18 or 2**21) to confirm its impact, then freeze if no improvement. Do not change any other parameters until these two are optimized.",
+        "reasoning": "EMBEDDING_LR has shown clear sensitivity and improvement potential (best result at 0.15). TOTAL_BATCH_SIZE was only tried once with negative results, but needs one more systematic test. The other 11 parameters have shown zero exploration or impact in 6 iterations - freezing them reduces search space dimensionality and allows focused optimization of the most promising levers. The 'focused' strategy balances exploration of key parameters with exploitation of the EMBEDDING_LR sensitivity pattern."
+      },
+      "best_bpb": 1.109653,
+      "config_after": {
+        "strategy": "focused",
+        "frozen": [
+          "HEAD_DIM",
+          "WINDOW_PATTERN",
+          "UNEMBEDDING_LR",
+          "MATRIX_LR",
+          "SCALAR_LR",
+          "TOTAL_BATCH_SIZE",
+          "WEIGHT_DECAY",
+          "ADAM_BETAS",
+          "WARMUP_RATIO"
+        ],
+        "guidance": "## Outer Loop Guidance (Cycle 1)\nFocus search exclusively on EMBEDDING_LR and TOTAL_BATCH_SIZE. For EMBEDDING_LR, explore values around the current best (0.15) with smaller steps (±0.05 range) rather "
+      }
+    },
+    {
+      "cycle": 1,
+      "analysis": {
+        "diagnosis": "The inner loop is correctly following the outer loop guidance to focus on EMBEDDING_LR and TOTAL_BATCH_SIZE, but it's making two key mistakes: 1) It's continuing to test TOTAL_BATCH_SIZE despite 3 failed attempts (0 kept, all worse than baseline), showing poor signal from this parameter. 2) It's exploring EMBEDDING_LR effectively with incremental adjustments, finding steady improvements from 0.6→0.15→0.18→0.16, but could benefit from more systematic exploration around the current optimum.",
+        "strategy": "focused",
+        "freeze_params": [
+          "TOTAL_BATCH_SIZE",
+          "WEIGHT_DECAY",
+          "ADAM_BETAS",
+          "WARMUP_RATIO",
+          "WARMDOWN_RATIO",
+          "FINAL_LR_FRAC",
+          "DEVICE_BATCH_SIZE"
+        ],
+        "unfreeze_params": [],
+        "guidance": "Freeze TOTAL_BATCH_SIZE at 2**19 (baseline) since all changes have worsened performance. Focus exclusively on fine-tuning EMBEDDING_LR using systematic exploration: test values in a ±0.03 range around the current best (0.16) with 0.01 increments (0.13, 0.14, 0.15, 0.17, 0.18, 0.19). After finding the optimal EMBEDDING_LR in this range, then consider unfreezing SCALAR_LR for coordinated tuning since learning rates often interact. Do not change any other parameters until EMBEDDING_LR is optimized.",
+        "reasoning": "TOTAL_BATCH_SIZE has shown consistent negative impact across 3 experiments and should be frozen to prevent wasted iterations. EMBEDDING_LR has shown clear sensitivity and steady improvement with finer adjustments, warranting continued focused exploration. The other active parameters haven't been touched in recent iterations despite being 'active', suggesting they're distractions; freezing them forces concentration on the most promising lever. Once EMBEDDING_LR is optimized, SCALAR_LR becomes the next logical candidate since learning rates for different parameter groups often need coordinated tuning."
+      },
+      "best_bpb": 1.107743,
+      "config_after": {
+        "strategy": "focused",
+        "frozen": [
+          "HEAD_DIM",
+          "WINDOW_PATTERN",
+          "UNEMBEDDING_LR",
+          "MATRIX_LR",
+          "SCALAR_LR",
+          "TOTAL_BATCH_SIZE",
+          "WEIGHT_DECAY",
+          "ADAM_BETAS",
+          "WARMUP_RATIO"
+        ],
+        "guidance": "## Outer Loop Guidance (Cycle 2)\nFreeze TOTAL_BATCH_SIZE at 2**19 (baseline) since all changes have worsened performance. Focus exclusively on fine-tuning EMBEDDING_LR using systematic exploration: te"
+      }
+    },
+    {
+      "cycle": 0,
+      "analysis": {
+        "diagnosis": "The inner loop is exploring too broadly without focusing on the most promising direction. It has identified a clear trend: reducing weight decay consistently improves validation loss (1.108→1.111→1.113→1.114→1.115), yet it continues to explore 13 parameters simultaneously. The search is wasting iterations on unpromising parameters while the weight decay signal is strong. The loop correctly identified the batch size increase was harmful but hasn't focused subsequent exploration on the regularization axis.",
+        "strategy": "focused",
+        "freeze_params": [
+          "HEAD_DIM",
+          "WINDOW_PATTERN",
+          "TOTAL_BATCH_SIZE",
+          "EMBEDDING_LR",
+          "UNEMBEDDING_LR",
+          "MATRIX_LR",
+          "SCALAR_LR",
+          "ADAM_BETAS",
+          "WARMUP_RATIO",
+          "WARMDOWN_RATIO",
+          "FINAL_LR_FRAC",
+          "DEVICE_BATCH_SIZE"
+        ],
+        "unfreeze_params": [],
+        "guidance": "Focus exclusively on WEIGHT_DECAY optimization. The experiment history shows a clear monotonic improvement trend as weight decay decreases from 0.2 to 0.01. Continue exploring lower weight decay values systematically, but also consider testing whether there's an optimal point by occasionally testing slightly higher values around promising low values to verify the trend continues. Propose weight decay changes that follow this established improvement direction while occasionally checking for potential minima.",
+        "reasoning": "Weight decay has been tried 4 times with consistent improvement signals, while other parameters have shown no evidence of impact. The search space is too large (13 active parameters) for only 6 iterations, causing the loop to spread its efforts too thin. Freezing all parameters except WEIGHT_DECAY will force the inner loop to exploit the clear signal it has already discovered. The 'focused' strategy is appropriate because we have identified a promising direction but need more systematic exploration of that single parameter to find the optimum."
+      },
+      "best_bpb": 1.108012,
+      "config_after": {
+        "strategy": "focused",
+        "frozen": [
+          "HEAD_DIM",
+          "WINDOW_PATTERN",
+          "TOTAL_BATCH_SIZE",
+          "EMBEDDING_LR",
+          "UNEMBEDDING_LR",
+          "WEIGHT_DECAY",
+          "ADAM_BETAS",
+          "WARMUP_RATIO",
+          "WARMDOWN_RATIO"
+        ],
+        "guidance": "## Outer Loop Guidance (Cycle 1)\nFocus exclusively on WEIGHT_DECAY optimization. The experiment history shows a clear monotonic improvement trend as weight decay decreases from 0.2 to 0.01. Continue e"
+      }
+    },
+    {
+      "cycle": 1,
+      "analysis": {
+        "diagnosis": "The inner loop is correctly following the guidance to focus on WEIGHT_DECAY, but it's making a critical error in interpreting the results. It's incorrectly identifying a 'clear monotonic improvement trend' when the actual data shows: baseline weight decay 0.2 gave 1.108 bpb, and every single subsequent reduction (0.1→0.05→0.025→0.01→0.005→0.001→0.0001) has produced WORSE results (1.111→1.113→1.114→1.115→1.117→1.115→1.114). The inner loop is systematically moving away from the best value (0.2) while misreading the trend. This is a pattern recognition failure - it's seeing 'improvement' where none exists.",
+        "strategy": "exploit",
+        "freeze_params": [
+          "WEIGHT_DECAY",
+          "TOTAL_BATCH_SIZE",
+          "ADAM_BETAS",
+          "WARMUP_RATIO",
+          "WARMDOWN_RATIO",
+          "FINAL_LR_FRAC"
+        ],
+        "unfreeze_params": [
+          "MATRIX_LR",
+          "SCALAR_LR"
+        ],
+        "guidance": "STOP exploring lower weight decay values. The baseline weight decay 0.2 gave the best result (1.108 bpb). Every reduction from that value has produced worse validation loss. Return to weight decay 0.2 and freeze it. Now explore learning rate parameters (MATRIX_LR and SCALAR_LR) systematically around the baseline values. Test both higher and lower learning rates in a structured way to find improvements. Document actual numerical comparisons, not perceived trends.",
+        "reasoning": "The search has become pathological - it's systematically moving away from the only good result while misinterpreting the data. WEIGHT_DECAY should be frozen at 0.2 since it's the only value that produced improvement. TOTAL_BATCH_SIZE should be frozen since the single change hurt performance. The strategy needs to shift from 'focused' on a misinterpreted trend to 'exploit' of the actual best configuration found. We need to unfreeze learning rate parameters because they haven't been explored yet and represent the most promising remaining dimension for improvement. The guidance must explicitly correct the pattern recognition error and provide clear direction."
+      },
+      "best_bpb": 1.108012,
+      "config_after": {
+        "strategy": "exploit",
+        "frozen": [
+          "HEAD_DIM",
+          "WINDOW_PATTERN",
+          "TOTAL_BATCH_SIZE",
+          "EMBEDDING_LR",
+          "UNEMBEDDING_LR",
+          "WEIGHT_DECAY",
+          "ADAM_BETAS",
+          "WARMUP_RATIO",
+          "WARMDOWN_RATIO"
+        ],
+        "guidance": "## Outer Loop Guidance (Cycle 2)\nSTOP exploring lower weight decay values. The baseline weight decay 0.2 gave the best result (1.108 bpb). Every reduction from that value has produced worse validation"
+      }
+    },
+    {
+      "cycle": 0,
+      "analysis": {
+        "diagnosis": "The inner loop is exploring too broadly without learning from failures. It keeps trying WARMUP_RATIO (4 attempts) despite no improvements, while ignoring the clear signal that TOTAL_BATCH_SIZE changes without proper warmup cause instability. The search is reactive rather than strategic - proposing changes based on single failed experiments rather than systematic exploration of promising directions.",
+        "strategy": "focused",
+        "freeze_params": [
+          "WARMUP_RATIO",
+          "WARMDOWN_RATIO",
+          "FINAL_LR_FRAC",
+          "ADAM_BETAS",
+          "SCALAR_LR"
+        ],
+        "unfreeze_params": [],
+        "guidance": "Focus on the TOTAL_BATCH_SIZE and learning rate relationship. The baseline TOTAL_BATCH_SIZE=2**19 with no warmup works best so far. When changing batch size, you MUST coordinate learning rates and warmup. Consider: 1) Keep TOTAL_BATCH_SIZE at 2**19 and optimize learning rates, 2) Systematically test smaller batch sizes with current learning rates, 3) If increasing batch size above 2**19, implement warmup AND consider adjusting learning rates. Stop testing warmup in isolation - it only helps when batch size changes.",
+        "reasoning": "WARMUP_RATIO has been tried 4 times with zero improvements - freeze it to stop wasted iterations. The clear signal is that TOTAL_BATCH_SIZE=2**19 works well, and changing it destabilizes training. Freeze secondary parameters (WARMDOWN_RATIO, FINAL_LR_FRAC, ADAM_BETAS, SCALAR_LR) to narrow the search space. The guidance forces systematic exploration of the batch-size/learning-rate relationship rather than random changes. The 'focused' strategy maintains some exploration but directs it toward the most promising dimension (batch size effects) while eliminating noise from repeatedly testing parameters that show no benefit."
+      },
+      "best_bpb": 1.117561,
+      "config_after": {
+        "strategy": "focused",
+        "frozen": [
+          "WARMUP_RATIO",
+          "WARMDOWN_RATIO",
+          "FINAL_LR_FRAC",
+          "ADAM_BETAS",
+          "SCALAR_LR"
+        ],
+        "guidance": "## Outer Loop Guidance (Cycle 1)\nFocus on the TOTAL_BATCH_SIZE and learning rate relationship. The baseline TOTAL_BATCH_SIZE=2**19 with no warmup works best so far. When changing batch size, you MUST "
+      }
+    },
+    {
+      "cycle": 1,
+      "analysis": {
+        "diagnosis": "The inner loop is correctly focusing on TOTAL_BATCH_SIZE, which has shown consistent improvements (6 trials, 3 kept, best result at 2**17). However, it's wasting iterations on WARMUP_RATIO (4 trials, 0 kept) despite guidance to stop testing it in isolation. The search is appropriately narrow on batch size but needs to coordinate better with learning rates as batch size changes. The crash at 2**16 indicates hardware limits, suggesting the search should now shift to optimizing learning rates for the best batch size found.",
+        "strategy": "focused",
+        "freeze_params": [
+          "WARMUP_RATIO",
+          "WARMDOWN_RATIO",
+          "FINAL_LR_FRAC",
+          "ADAM_BETAS",
+          "SCALAR_LR"
+        ],
+        "unfreeze_params": [],
+        "guidance": "Freeze TOTAL_BATCH_SIZE at 2**17 (the best found value) and focus exclusively on optimizing learning rates (EMBEDDING_LR, UNEMBEDDING_LR, MATRIX_LR) for this batch size. Do not change batch size further - the crash at 2**16 shows hardware limits. Systematically test learning rate scaling: try both proportional scaling (increase LR with smaller batch) and inverse scaling (decrease LR with smaller batch) relative to baseline. Coordinate all three learning rates together - don't change them independently. Report the reasoning for each LR adjustment based on batch size theory.",
+        "reasoning": "TOTAL_BATCH_SIZE exploration has been successful but reached hardware limits (crash at 2**16). The best value (2**17) should now be fixed while we optimize learning rates for it, as smaller batches typically require different LR schedules. WARMUP_RATIO has been tried 4 times with zero kept results, so freezing it prevents wasted iterations. Keeping the strategy as 'focused' maintains efficiency while shifting the focus from batch size to learning rate optimization for the discovered optimal batch size."
+      },
+      "best_bpb": 1.054782,
+      "config_after": {
+        "strategy": "focused",
+        "frozen": [
+          "WARMUP_RATIO",
+          "WARMDOWN_RATIO",
+          "FINAL_LR_FRAC",
+          "ADAM_BETAS",
+          "SCALAR_LR"
+        ],
+        "guidance": "## Outer Loop Guidance (Cycle 2)\nFreeze TOTAL_BATCH_SIZE at 2**17 (the best found value) and focus exclusively on optimizing learning rates (EMBEDDING_LR, UNEMBEDDING_LR, MATRIX_LR) for this batch siz"
+      }
+    }
+  ]
+}

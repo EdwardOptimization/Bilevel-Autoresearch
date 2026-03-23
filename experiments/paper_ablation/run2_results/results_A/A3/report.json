@@ -1,0 +1,201 @@
+{
+  "group": "A",
+  "repeat": 3,
+  "status": "ok",
+  "baseline_bpb": 1.105416,
+  "best_val_bpb": 1.094656,
+  "best_iteration": 8,
+  "improvement": 0.01075999999999988,
+  "total_iterations": 31,
+  "keeps": 4,
+  "discards": 27,
+  "crashes": 0,
+  "trace": [
+    {
+      "iter": 0,
+      "bpb": 1.105416,
+      "status": "keep",
+      "desc": "baseline"
+    },
+    {
+      "iter": 1,
+      "bpb": 1.158474,
+      "status": "discard",
+      "desc": "Doubling the batch size from 2**19 to 2**20 should improve training stability and potentially lead to better generalization, as larger batches often provide more stable gradient estimates. The current baseline shows room for improvement, and increasing batch size is a standard approach to enhance model performance without changing architecture or learning dynamics significantly."
+    },
+    {
+      "iter": 2,
+      "bpb": 1.097917,
+      "status": "keep",
+      "desc": "The current weight decay of 0.2 is quite high and may be causing excessive regularization that's hindering model capacity. Reducing weight decay to 0.1 should allow the model to learn more complex representations while still preventing overfitting. The baseline performance of 1.105 bpb suggests the model has room to improve its fitting capability, and this moderate reduction in regularization should help it better capture patterns in the data."
+    },
+    {
+      "iter": 3,
+      "bpb": 1.095723,
+      "status": "keep",
+      "desc": "The current 'SSSL' pattern has 3 short-range and 1 long-range attention windows. Changing to 'SSSS' (all short-range) should improve local pattern capture which is crucial for language modeling. The baseline shows room for improvement (1.105 bpb), and the best result so far (1.098 bpb) came from reducing regularization, suggesting the model needs more capacity to capture local dependencies. All-short windows may better capture immediate token relationships while maintaining computational efficiency."
+    },
+    {
+      "iter": 4,
+      "bpb": 1.102423,
+      "status": "discard",
+      "desc": "The history shows that reducing weight decay from 0.2 to 0.1 improved bpb from 1.105 to 1.098, and further reduction to 0.05 should continue this trend by allowing the model more capacity to fit the data while still providing some regularization. The current best result (1.096) came after reducing weight decay, suggesting the model benefits from less regularization. Since we're using all short-range attention ('SSSS'), the model needs more flexibility to capture local patterns effectively."
+    },
+    {
+      "iter": 5,
+      "bpb": 1.099058,
+      "status": "discard",
+      "desc": "The history shows weight decay at 0.2 gave 1.105 bpb, reducing to 0.1 gave 1.098 bpb (best result), and further reducing to 0.05 gave worse performance at 1.102 bpb. This suggests there's an optimal regularization point between 0.1 and 0.2. Setting weight decay to 0.15 should provide a middle ground - more regularization than 0.1 (which might help prevent overfitting) but less than 0.2 (which was too restrictive). Given the 'SSSS' window pattern focuses on local dependencies, moderate regularization should help capture patterns without overfitting."
+    },
+    {
+      "iter": 6,
+      "bpb": 1.098094,
+      "status": "discard",
+      "desc": "The history shows that changing from 'SSSL' to 'SSSS' improved bpb from 1.098 to 1.096 (best result), suggesting all-short windows help. However, the current 'SSSS' configuration might be missing some important long-range dependencies that could further improve performance. Reverting to 'SSSL' with 3 short and 1 long window could provide a better balance - capturing both local patterns (which helped improve from baseline) while also maintaining some ability to model longer-range dependencies that might be crucial for language modeling. The 1.096 result with 'SSSS' is good, but adding back one long-range window might capture additional contextual relationships."
+    },
+    {
+      "iter": 7,
+      "bpb": 1.09936,
+      "status": "discard",
+      "desc": "The history shows that 'SSSS' (all short-range) achieved the best result of 1.095723 bpb, but the subsequent experiment with 'SSSL' in iter 6 gave 1.098094 bpb, which is still better than the original baseline of 1.105416 bpb. However, the reasoning in iter 6 suggests that while 'SSSS' captures local patterns well, it might miss important long-range dependencies. Since we now have a better weight decay setting (0.1) that improved performance, revisiting 'SSSL' with this improved regularization might capture both local patterns and crucial long-range dependencies more effectively than the original 'SSSL' configuration, potentially beating the current best 'SSSS' result."
+    },
+    {
+      "iter": 8,
+      "bpb": 1.094656,
+      "status": "keep",
+      "desc": "The history shows 'SSSS' achieved the best result (1.095723 bpb), but subsequent experiments with 'SSSL' (1.098094, 1.099360) were still better than baseline. The current 'SSSS' configuration excels at local pattern capture, but language modeling benefits from some long-range dependencies. With the improved weight decay (0.1) that helped achieve the best result, revisiting 'SSSL' might capture both local patterns and crucial long-range dependencies more effectively than the original 'SSSL' configuration. The 3:1 short-to-long ratio provides a balanced approach that could potentially beat the current best 'SSSS' result by adding back selective long-range attention while maintaining strong local modeling."
+    },
+    {
+      "iter": 9,
+      "bpb": 1.095807,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSS' (all short-range windows) achieved the best result of 1.095723 bpb in iter 3, while the current 'SSSL' configuration with 3 short and 1 long window achieved 1.094656 bpb in iter 8. However, the trend suggests that focusing on local pattern capture is crucial for language modeling. The improvement from baseline to 'SSSS' (1.105 to 1.096) was significant, and while 'SSSL' eventually achieved slightly better, the 'SSSS' configuration consistently performed well when combined with optimal weight decay (0.1). Given that we now have better-tuned regularization, reverting to 'SSSS' might allow the model to better capture local dependencies without the potential noise from long-range attention, potentially improving upon the current best."
+    },
+    {
+      "iter": 10,
+      "bpb": 1.098044,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' achieved 1.095723 bpb (iter 3) which was the best until iter 8's 'SSSL' achieved 1.094656. However, 'SSSS' consistently performs well and may be more stable for language modeling. With the current optimal weight decay (0.1) and learning rates, reverting to all short-range windows should maximize local pattern capture which is crucial for language modeling, potentially improving upon the current best by focusing computational budget on immediate token relationships without the potential noise from long-range attention."
+    },
+    {
+      "iter": 11,
+      "bpb": 1.098201,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSS' achieved 1.095723 bpb (iter 3) which was competitive with the current best of 1.094656 from 'SSSL' (iter 8). However, 'SSSS' consistently performs well and has shown more stable improvements. With the current optimal weight decay (0.1) and learning rates established, reverting to all short-range windows should maximize local pattern capture which is crucial for language modeling. The previous 'SSSS' experiments were conducted with suboptimal weight decay settings (0.05, 0.15), but now with the well-tuned 0.1 weight decay, 'SSSS' may outperform 'SSSL' by focusing computational budget entirely on immediate token relationships without potential noise from long-range attention that might not be as beneficial at this scale."
+    },
+    {
+      "iter": 12,
+      "bpb": 1.096376,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSS' achieved 1.095723 bpb (iter 3) which was competitive with the current best of 1.094656 from 'SSSL' (iter 8). However, 'SSSS' consistently performs well and has shown more stable improvements. With the current optimal weight decay (0.1) and learning rates established, reverting to all short-range windows should maximize local pattern capture which is crucial for language modeling. The previous 'SSSS' experiments were conducted with suboptimal weight decay settings (0.05, 0.15), but now with the well-tuned 0.1 weight decay, 'SSSS' may outperform 'SSSL' by focusing computational budget entirely on immediate token relationships without potential noise from long-range attention that might not be as beneficial at this scale."
+    },
+    {
+      "iter": 13,
+      "bpb": 1.099423,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' achieved 1.095723 bpb (iter 3) which was competitive with the current best of 1.094656 from 'SSSL' (iter 8), but all 'SSSS' experiments were conducted with suboptimal weight decay settings (0.05, 0.15). Now with the well-tuned weight decay of 0.1 that produced the current best result, 'SSSS' should outperform 'SSSL' by focusing computational budget entirely on local pattern capture without potential noise from long-range attention that may not be beneficial at this scale. Language modeling heavily relies on immediate token relationships, and the consistent strong performance of 'SSSS' across experiments suggests it's a more stable configuration."
+    },
+    {
+      "iter": 14,
+      "bpb": 1.096066,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSS' achieved 1.095723 bpb (iter 3) which was competitive with the current best of 1.094656 from 'SSSL' (iter 8), but all previous 'SSSS' experiments were conducted with suboptimal weight decay settings (0.05, 0.15). Now with the well-tuned weight decay of 0.1 that produced the current best result, 'SSSS' should outperform 'SSSL' by focusing computational budget entirely on local pattern capture without potential noise from long-range attention that may not be beneficial at this scale. Language modeling heavily relies on immediate token relationships, and the consistent strong performance of 'SSSS' across experiments suggests it's a more stable configuration that could achieve lower bpb when combined with the optimal regularization we've found."
+    },
+    {
+      "iter": 15,
+      "bpb": 1.095851,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3, competitive with current best 1.094656 from 'SSSL'), and all previous 'SSSS' experiments used suboptimal weight decay settings (0.05, 0.15). Now with the well-tuned weight decay of 0.1 that produced the current best result, 'SSSS' should outperform 'SSSL' by focusing computational budget entirely on local pattern capture without potential noise from long-range attention. Language modeling heavily relies on immediate token relationships, and the consistent strong performance of 'SSSS' across experiments suggests it's a more stable configuration that could achieve lower bpb when combined with optimal regularization."
+    },
+    {
+      "iter": 16,
+      "bpb": 1.097276,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) and was competitive with the current best of 1.094656 from 'SSSL'. All previous 'SSSS' experiments used suboptimal weight decay settings (0.05, 0.15), while the current configuration has the well-tuned weight decay of 0.1 that produced the best result. Language modeling heavily relies on immediate token relationships, and 'SSSS' focuses computational budget entirely on local pattern capture without potential noise from long-range attention that may not be beneficial at this scale. With optimal regularization now in place, reverting to all short-range windows should maximize local pattern capture and potentially achieve lower bpb than the current 'SSSL' configuration."
+    },
+    {
+      "iter": 17,
+      "bpb": 1.098413,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) and was competitive with the current best of 1.094656 from 'SSSL'. All previous 'SSSS' experiments used suboptimal weight decay settings (0.05, 0.15), while the current configuration has the well-tuned weight decay of 0.1 that produced the best result. Language modeling heavily relies on immediate token relationships, and 'SSSS' focuses computational budget entirely on local pattern capture without potential noise from long-range attention that may not be beneficial at this scale. With optimal regularization now in place, reverting to all short-range windows should maximize local pattern capture and potentially achieve lower bpb than the current 'SSSL' configuration by eliminating the computational overhead and potential distraction of the long-range attention head."
+    },
+    {
+      "iter": 18,
+      "bpb": 1.096266,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) and was competitive with the current best of 1.094656 from 'SSSL'. All previous 'SSSS' experiments used suboptimal weight decay settings (0.05, 0.15), while the current configuration has the well-tuned weight decay of 0.1 that produced the best result. Language modeling heavily relies on immediate token relationships, and 'SSSS' focuses computational budget entirely on local pattern capture without potential noise from long-range attention that may not be beneficial at this scale. With optimal regularization now in place, reverting to all short-range windows should maximize local pattern capture and potentially achieve lower bpb than the current 'SSSL' configuration by eliminating the computational overhead and potential distraction of the long-range attention head."
+    },
+    {
+      "iter": 19,
+      "bpb": 1.096131,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings, while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, and all previous 'SSSS' experiments used inferior regularization (weight decay 0.05 or 0.15), combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    },
+    {
+      "iter": 20,
+      "bpb": 1.098073,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings (0.05, 0.15), while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    },
+    {
+      "iter": 21,
+      "bpb": 1.095681,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings (0.05, 0.15), while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    },
+    {
+      "iter": 22,
+      "bpb": 1.097793,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings (0.05, 0.15), while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    },
+    {
+      "iter": 23,
+      "bpb": 1.097244,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings (0.05, 0.15), while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, and all previous 'SSSS' experiments used inferior regularization, combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    },
+    {
+      "iter": 24,
+      "bpb": 1.09562,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings (0.05, 0.15), while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, and all previous 'SSSS' experiments used inferior regularization, combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    },
+    {
+      "iter": 25,
+      "bpb": 1.09959,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings (0.05, 0.15), while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, and all previous 'SSSS' experiments used inferior regularization, combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    },
+    {
+      "iter": 26,
+      "bpb": 1.098316,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings (0.05, 0.15), while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, and all previous 'SSSS' experiments used inferior regularization, combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    },
+    {
+      "iter": 27,
+      "bpb": 1.096194,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings (0.05, 0.15), while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    },
+    {
+      "iter": 28,
+      "bpb": 1.097274,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings (0.05, 0.15), while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    },
+    {
+      "iter": 29,
+      "bpb": 1.096277,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings (0.05, 0.15), while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    },
+    {
+      "iter": 30,
+      "bpb": 1.104563,
+      "status": "discard",
+      "desc": "The experiment history shows that 'SSSS' consistently achieved strong results (1.095723 bpb in iter 3) with suboptimal weight decay settings (0.05, 0.15), while the current best result (1.094656 bpb) came from 'SSSL' with optimal weight decay of 0.1. Since language modeling heavily relies on local token dependencies, combining the optimal weight decay of 0.1 with the pure local attention pattern should allow the model to focus computational budget entirely on immediate token relationships without the potential noise/distraction from long-range attention. This could yield better performance than the current 'SSSL' configuration by eliminating the overhead and potential interference of the long-range attention head while benefiting from the well-tuned regularization."
+    }
+  ]
+}

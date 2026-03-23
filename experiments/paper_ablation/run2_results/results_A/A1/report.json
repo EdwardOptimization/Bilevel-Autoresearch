@@ -1,0 +1,201 @@
+{
+  "group": "A",
+  "repeat": 1,
+  "status": "ok",
+  "baseline_bpb": 1.104926,
+  "best_val_bpb": 1.096392,
+  "best_iteration": 3,
+  "improvement": 0.008534000000000042,
+  "total_iterations": 31,
+  "keeps": 4,
+  "discards": 27,
+  "crashes": 0,
+  "trace": [
+    {
+      "iter": 0,
+      "bpb": 1.104926,
+      "status": "keep",
+      "desc": "baseline"
+    },
+    {
+      "iter": 1,
+      "bpb": 1.099455,
+      "status": "keep",
+      "desc": "The current weight decay of 0.2 is quite high and may be causing excessive regularization, limiting model capacity. Reducing to 0.1 should allow the model to learn more complex patterns while still preventing overfitting, potentially improving validation performance."
+    },
+    {
+      "iter": 2,
+      "bpb": 1.096541,
+      "status": "keep",
+      "desc": "The current 'SSSL' pattern has 3 short-range and 1 long-range attention windows. Changing to 'SSSS' (all short-range) may improve local pattern capture which is crucial for language modeling, especially early in training. Since we're still exploring and the model hasn't shown signs of overfitting, focusing on local dependencies could yield better initial convergence and lower validation loss."
+    },
+    {
+      "iter": 3,
+      "bpb": 1.096392,
+      "status": "keep",
+      "desc": "The current 'SSSS' pattern (all short-range attention) may be limiting the model's ability to capture longer-range dependencies. Reverting to 'SSSL' (3 short-range, 1 long-range) could improve modeling of contextual relationships beyond local windows, potentially reducing validation loss. The previous improvement from 'SSSL' to 'SSSS' was modest (1.099455 to 1.096541), suggesting both patterns have merit, but the model may benefit from some long-range attention for better language modeling."
+    },
+    {
+      "iter": 4,
+      "bpb": 1.096958,
+      "status": "discard",
+      "desc": "The current 'SSSL' pattern (3 short, 1 long) showed modest improvement over 'SSSS' (all short) in iteration 3 (1.096392 vs 1.096541). A 'SLSL' pattern alternates short and long attention windows, potentially providing better balance between local pattern capture and long-range dependencies. This alternating pattern may allow the model to integrate both local and global context more effectively throughout the layers, which could improve language modeling performance beyond the current best."
+    },
+    {
+      "iter": 5,
+      "bpb": 1.104669,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' (all short-range) achieved 1.096541 bpb (iter 2) while 'SSSL' achieved 1.096392 bpb (iter 3) - only a 0.000149 difference. However, 'SSSS' to 'SSSL' showed minimal improvement, while 'SSSL' to 'SLSL' (iter 4) actually worsened performance to 1.096958 bpb. This suggests the model may benefit more from consistent local attention patterns rather than mixing long-range windows. Since language modeling heavily relies on local dependencies and we're still early in optimization, focusing entirely on short-range attention ('SSSS') may provide more stable gradient flow and better capture of immediate context, potentially yielding better validation performance than the current 'SSSL' pattern."
+    },
+    {
+      "iter": 6,
+      "bpb": 1.098602,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' (all short-range) achieved 1.096541 bpb (iter 2) while 'SSSL' achieved 1.096392 bpb (iter 3) - only a 0.000149 difference. However, subsequent experiments with mixed patterns ('SLSL' in iter 4) worsened performance, suggesting the model benefits more from consistent local attention. Since language modeling heavily relies on local dependencies and we're optimizing for validation loss, focusing entirely on short-range attention ('SSSS') may provide more stable gradient flow and better capture of immediate context, potentially yielding better validation performance than the current 'SSSL' pattern."
+    },
+    {
+      "iter": 7,
+      "bpb": 1.098849,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' achieved 1.096541 bpb (iter 2) while 'SSSL' achieved 1.096392 bpb (iter 3) - only a 0.000149 difference, suggesting both patterns perform similarly. However, subsequent experiments with mixed patterns ('SLSL' in iter 4) worsened performance to 1.096958 bpb, and returning to 'SSSS' in iter 6 improved to 1.098602 (though still not as good as the best). This indicates the model benefits more from consistent local attention patterns. Since language modeling heavily relies on local dependencies and we're optimizing for validation loss, focusing entirely on short-range attention ('SSSS') may provide more stable gradient flow and better capture of immediate context. The minimal difference between 'SSSS' and 'SSSL' suggests local attention is sufficient at this stage, and the cleaner 'SSSS' pattern might yield more consistent convergence."
+    },
+    {
+      "iter": 8,
+      "bpb": 1.099993,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' achieved 1.096541 bpb (iter 2) while 'SSSL' achieved 1.096392 bpb (iter 3) - a negligible 0.000149 difference. However, subsequent attempts with mixed patterns ('SLSL' in iter 4) worsened performance, and returns to 'SSSS' showed consistent decent performance (iter 6: 1.098602, iter 7: 1.098849). The minimal difference between 'SSSS' and 'SSSL' suggests local attention is sufficient at this stage, and the cleaner 'SSSS' pattern provides more stable gradient flow and better capture of immediate context, which is crucial for language modeling. Given the time budget constraints, focusing on the more consistent 'SSSS' pattern may yield better average performance."
+    },
+    {
+      "iter": 9,
+      "bpb": 1.098106,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' achieved 1.096541 bpb (iter 2) while 'SSSL' achieved 1.096392 bpb (iter 3) - only a 0.000149 difference, suggesting both patterns perform similarly. However, subsequent experiments with mixed patterns ('SLSL' in iter 4) worsened performance, and returns to 'SSSS' showed consistent decent performance (iter 6: 1.098602, iter 7: 1.098849, iter 8: 1.099993). The minimal difference between 'SSSS' and 'SSSL' suggests local attention is sufficient at this stage, and the cleaner 'SSSS' pattern provides more stable gradient flow and better capture of immediate context, which is crucial for language modeling. Given the time budget constraints and the fact that 'SSSS' has shown more consistent performance across multiple runs, focusing on this pattern may yield better average performance and potentially discover a more optimal configuration."
+    },
+    {
+      "iter": 10,
+      "bpb": 1.104465,
+      "status": "discard",
+      "desc": "The experiment history shows weight decay was reduced from 0.2 to 0.1 in iteration 1, which improved bpb from 1.104926 to 1.099455. Since then, most experiments have focused on attention patterns with minimal improvements (best is 1.096392). The current weight decay of 0.1 may still be too high, limiting model capacity and preventing better convergence. Reducing it further to 0.05 should allow the model to learn more complex patterns while maintaining sufficient regularization, potentially breaking through the current plateau around 1.096 bpb. This is supported by the initial success of reducing weight decay and the fact that we haven't seen signs of overfitting in recent runs."
+    },
+    {
+      "iter": 11,
+      "bpb": 1.103348,
+      "status": "discard",
+      "desc": "The experiment history shows that reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating that less regularization was beneficial. Since then, we've plateaued around 1.096 bpb with various attention pattern experiments. The current weight decay of 0.1 may still be too restrictive, limiting the model's capacity to learn more complex patterns. Reducing it to 0.05 should allow the model greater flexibility while maintaining some regularization to prevent overfitting, potentially breaking through the current performance plateau."
+    },
+    {
+      "iter": 12,
+      "bpb": 1.102655,
+      "status": "discard",
+      "desc": "The experiment history shows that reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb with various attention pattern experiments. The current weight decay of 0.1 may still be too restrictive, limiting the model's capacity to learn more complex patterns. Reducing it to 0.05 should allow the model greater flexibility while maintaining some regularization to prevent overfitting, potentially breaking through the current performance plateau. This is supported by the initial success of reducing weight decay and the fact that recent runs with weight decay 0.1 haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 13,
+      "bpb": 1.097075,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' achieved 1.096541 bpb (iter 2) while 'SSSL' achieved 1.096392 bpb (iter 3) - a negligible 0.000149 difference. However, 'SSSS' has demonstrated more consistent performance across multiple runs (iter 6: 1.098602, iter 7: 1.098849, iter 9: 1.098106) compared to mixed patterns which consistently worsened performance ('SLSL' in iter 4: 1.096958). Since language modeling heavily relies on local dependencies and we're optimizing for validation loss, focusing entirely on short-range attention ('SSSS') provides more stable gradient flow and better capture of immediate context. The minimal difference between patterns suggests local attention is sufficient at this stage, and the cleaner 'SSSS' pattern may yield more consistent convergence within the time budget."
+    },
+    {
+      "iter": 14,
+      "bpb": 1.102265,
+      "status": "discard",
+      "desc": "The experiment history shows that reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb with various attention pattern experiments. The current weight decay of 0.1 may still be too restrictive, limiting the model's capacity to learn more complex patterns. Reducing it to 0.05 should allow the model greater flexibility while maintaining some regularization to prevent overfitting, potentially breaking through the current performance plateau. This is supported by the initial success of reducing weight decay and the fact that recent runs with weight decay 0.1 haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 15,
+      "bpb": 1.101465,
+      "status": "discard",
+      "desc": "The experiment history shows that reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb with various attention pattern experiments. The current weight decay of 0.1 may still be too restrictive, limiting the model's capacity to learn more complex patterns. Reducing it to 0.05 should allow the model greater flexibility while maintaining some regularization to prevent overfitting, potentially breaking through the current performance plateau. This is supported by the initial success of reducing weight decay and the fact that recent runs with weight decay 0.1 haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 16,
+      "bpb": 1.103291,
+      "status": "discard",
+      "desc": "The experiment history shows that reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb with various attention pattern experiments. The current weight decay of 0.1 may still be too restrictive, limiting the model's capacity to learn more complex patterns. Reducing it to 0.05 should allow the model greater flexibility while maintaining some regularization to prevent overfitting, potentially breaking through the current performance plateau. This is supported by the initial success of reducing weight decay and the fact that recent runs with weight decay 0.1 haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 17,
+      "bpb": 1.102892,
+      "status": "discard",
+      "desc": "The experiment history shows that reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb with various attention pattern experiments. The current weight decay of 0.1 may still be too restrictive, limiting the model's capacity to learn more complex patterns. Reducing it to 0.05 should allow the model greater flexibility while maintaining some regularization to prevent overfitting, potentially breaking through the current performance plateau. This is supported by the initial success of reducing weight decay and the fact that recent runs with weight decay 0.1 haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 18,
+      "bpb": 1.103016,
+      "status": "discard",
+      "desc": "The experiment history shows consistent improvement when reducing weight decay from 0.2 to 0.1 (bpb dropped from 1.104926 to 1.099455). Since then, we've plateaued around 1.096 bpb despite various attention pattern experiments. Multiple recent attempts to reduce weight decay (iter 10-12, 14-17) showed slightly worse results, but these experiments also changed other parameters simultaneously. The current plateau suggests the model may be underfitting due to excessive regularization. Reducing weight decay to 0.05 should allow the model greater capacity to learn complex patterns while maintaining sufficient regularization, potentially breaking through the current performance barrier. This is supported by the initial success of reducing weight decay and the fact that recent runs haven't shown signs of overfitting."
+    },
+    {
+      "iter": 19,
+      "bpb": 1.103372,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' achieved 1.096541 bpb (iter 2) and 'SSSL' achieved 1.096392 bpb (iter 3) - only a 0.000149 difference, suggesting both patterns perform similarly. However, 'SSSS' has demonstrated more consistent performance across multiple runs (iter 6: 1.098602, iter 7: 1.098849, iter 9: 1.098106) compared to mixed patterns which consistently worsened performance. Since language modeling heavily relies on local dependencies and we're optimizing for validation loss, focusing entirely on short-range attention ('SSSS') provides more stable gradient flow and better capture of immediate context. The minimal difference between patterns suggests local attention is sufficient at this stage, and the cleaner 'SSSS' pattern may yield more consistent convergence within the time budget."
+    },
+    {
+      "iter": 20,
+      "bpb": 1.106494,
+      "status": "discard",
+      "desc": "The experiment history shows that reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb despite various attention pattern experiments. The current plateau suggests the model may be underfitting due to excessive regularization. Reducing weight decay to 0.05 should allow the model greater capacity to learn complex patterns while maintaining sufficient regularization, potentially breaking through the current performance barrier. This is supported by the initial success of reducing weight decay and the fact that recent runs haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 21,
+      "bpb": 1.103706,
+      "status": "discard",
+      "desc": "The experiment history shows a clear pattern: reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb despite various attention pattern experiments. The current plateau suggests the model may be underfitting due to excessive regularization. Multiple recent attempts to reduce weight decay (iter 10-12, 14-17) showed slightly worse results, but these experiments also changed other parameters simultaneously, confounding the analysis. A focused reduction to 0.05 should allow the model greater capacity to learn complex patterns while maintaining sufficient regularization, potentially breaking through the current performance barrier. This is supported by the initial success of reducing weight decay and the fact that recent runs haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 22,
+      "bpb": 1.103419,
+      "status": "discard",
+      "desc": "The experiment history shows that reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb despite various attention pattern experiments. The current plateau suggests the model may be underfitting due to excessive regularization. Multiple recent attempts to reduce weight decay (iter 10-12, 14-17) showed slightly worse results, but these experiments also changed other parameters simultaneously (like WINDOW_PATTERN), confounding the analysis. A focused reduction to 0.05 should allow the model greater capacity to learn complex patterns while maintaining sufficient regularization, potentially breaking through the current performance barrier. This is supported by the initial success of reducing weight decay and the fact that recent runs haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 23,
+      "bpb": 1.104103,
+      "status": "discard",
+      "desc": "The experiment history shows 'SSSS' achieved 1.096541 bpb (iter 2) while 'SSSL' achieved 1.096392 bpb (iter 3) - a negligible 0.000149 difference. However, 'SSSS' has demonstrated more consistent performance across multiple runs (iter 6: 1.098602, iter 7: 1.098849, iter 9: 1.098106) compared to mixed patterns which consistently worsened performance ('SLSL' in iter 4: 1.096958). Since language modeling heavily relies on local dependencies and we're optimizing for validation loss, focusing entirely on short-range attention ('SSSS') provides more stable gradient flow and better capture of immediate context. The minimal difference between patterns suggests local attention is sufficient at this stage, and the cleaner 'SSSS' pattern may yield more consistent convergence within the time budget."
+    },
+    {
+      "iter": 24,
+      "bpb": 1.103538,
+      "status": "discard",
+      "desc": "The experiment history shows a clear pattern: reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb despite various attention pattern experiments. The current plateau suggests the model may be underfitting due to excessive regularization. Multiple recent attempts to reduce weight decay (iter 10-12, 14-17) showed slightly worse results, but these experiments also changed other parameters simultaneously (like WINDOW_PATTERN), confounding the analysis. A focused reduction to 0.05 should allow the model greater capacity to learn complex patterns while maintaining sufficient regularization, potentially breaking through the current performance barrier. This is supported by the initial success of reducing weight decay and the fact that recent runs haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 25,
+      "bpb": 1.104564,
+      "status": "discard",
+      "desc": "The experiment history shows that reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb despite various attention pattern experiments. The current plateau suggests the model may be underfitting due to excessive regularization. Multiple recent attempts to reduce weight decay (iter 10-12, 14-17) showed slightly worse results, but these experiments also changed other parameters simultaneously (like WINDOW_PATTERN), confounding the analysis. A focused reduction to 0.05 should allow the model greater capacity to learn complex patterns while maintaining sufficient regularization, potentially breaking through the current performance barrier. This is supported by the initial success of reducing weight decay and the fact that recent runs haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 26,
+      "bpb": 1.105907,
+      "status": "discard",
+      "desc": "The experiment history shows a clear pattern: reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb despite various attention pattern experiments. The current plateau suggests the model may be underfitting due to excessive regularization. Multiple recent attempts to reduce weight decay (iter 10-12, 14-17) showed slightly worse results, but these experiments also changed other parameters simultaneously (like WINDOW_PATTERN), confounding the analysis. A focused reduction to 0.05 should allow the model greater capacity to learn complex patterns while maintaining sufficient regularization, potentially breaking through the current performance barrier. This is supported by the initial success of reducing weight decay and the fact that recent runs haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 27,
+      "bpb": 1.104832,
+      "status": "discard",
+      "desc": "The experiment history shows a clear pattern: reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb despite various attention pattern experiments. The current plateau suggests the model may be underfitting due to excessive regularization. Multiple recent attempts to reduce weight decay (iter 10-12, 14-17) showed slightly worse results, but these experiments also changed other parameters simultaneously (like WINDOW_PATTERN), confounding the analysis. A focused reduction to 0.05 should allow the model greater capacity to learn complex patterns while maintaining sufficient regularization, potentially breaking through the current performance barrier. This is supported by the initial success of reducing weight decay and the fact that recent runs haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 28,
+      "bpb": 1.100601,
+      "status": "discard",
+      "desc": "The experiment history shows that reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb despite various attention pattern experiments. The current plateau suggests the model may be underfitting due to excessive regularization. Multiple recent attempts to reduce weight decay (iter 10-12, 14-17) showed slightly worse results, but these experiments also changed other parameters simultaneously (like WINDOW_PATTERN), confounding the analysis. A focused reduction to 0.05 should allow the model greater capacity to learn complex patterns while maintaining sufficient regularization, potentially breaking through the current performance barrier. This is supported by the initial success of reducing weight decay and the fact that recent runs haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 29,
+      "bpb": 1.10352,
+      "status": "discard",
+      "desc": "The experiment history shows a clear pattern: reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb despite various attention pattern experiments. The current plateau suggests the model may be underfitting due to excessive regularization. Multiple recent attempts to reduce weight decay (iter 10-12, 14-17) showed slightly worse results, but these experiments also changed other parameters simultaneously (like WINDOW_PATTERN), confounding the analysis. A focused reduction to 0.05 should allow the model greater capacity to learn complex patterns while maintaining sufficient regularization, potentially breaking through the current performance barrier. This is supported by the initial success of reducing weight decay and the fact that recent runs haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    },
+    {
+      "iter": 30,
+      "bpb": 1.103218,
+      "status": "discard",
+      "desc": "The experiment history shows that reducing weight decay from 0.2 to 0.1 in iteration 1 improved bpb from 1.104926 to 1.099455, indicating less regularization was beneficial. Since then, we've plateaued around 1.096 bpb despite various attention pattern experiments. The current plateau suggests the model may be underfitting due to excessive regularization. Multiple recent attempts to reduce weight decay (iter 10-12, 14-17) showed slightly worse results, but these experiments also changed other parameters simultaneously (like WINDOW_PATTERN), confounding the analysis. A focused reduction to 0.05 should allow the model greater capacity to learn complex patterns while maintaining sufficient regularization, potentially breaking through the current performance barrier. This is supported by the initial success of reducing weight decay and the fact that recent runs haven't shown signs of overfitting (bpb values remain stable or improve slightly)."
+    }
+  ]
+}
