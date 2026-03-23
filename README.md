@@ -20,6 +20,16 @@ Outer loop:  Optimizes how the inner loop works (analyze trace → modify mechan
 
 Both levels use the same pattern: **propose × evaluate × iterate**. The inner loop improves the task. The outer loop improves the inner loop — not by tuning prompts, but by structurally changing how it searches.
 
+**Why 3 layers in the experiment?** The design is bilevel (inner + outer), but in practice we split the outer loop into two responsibilities for cleaner separation of concerns:
+
+| Layer | Role | What it changes |
+|-------|------|-----------------|
+| **Level 1** | Inner loop | Task output (hyperparameters) |
+| **Level 1.5** | Outer loop — config | Runtime search parameters (freeze/unfreeze, strategy shift) |
+| **Level 2** | Outer loop — mechanism | Inner loop code structure (generate new Python mechanisms) |
+
+Level 1.5 handles tactical adjustments ("stop searching WEIGHT_DECAY, focus on LR"). Level 2 handles strategic innovation ("invent a Tabu Search mechanism to prevent repetitive proposals"). Separating them lets Level 2 focus purely on mechanism discovery without being distracted by parameter tuning.
+
 ## Key Result: Controlled Ablation Experiment
 
 On Karpathy's GPT pretraining benchmark (val_bpb, 300s budget, RTX 5090), we ran a controlled ablation with **3 groups × 3 independent repeats × 30 iterations**, using the **same LLM (DeepSeek)** for all levels:

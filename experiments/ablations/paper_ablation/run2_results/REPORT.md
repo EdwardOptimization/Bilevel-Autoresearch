@@ -25,7 +25,17 @@ Specifically:
 | **B** | Level 1 + 1.5 | Same inner loop as A, plus outer loop every 5 iterations: analyzes trace, freezes/unfreezes parameters, shifts search strategy, injects guidance. (`simple_mode=True` + `TrainOuterLoop`) |
 | **C** | Level 1 + 1.5 + 2 | Same as B, plus Level 2 every 2 outer cycles: DeepSeek runs a 4-round research session (Explore → Critique → Specify → Generate code), patches runner.py with new mechanism, validates import. (`simple_mode=True` initially, patched runner dynamically loaded) |
 
-### 2.2 Controlled Variables
+### 2.2 Why Three Layers Instead of Two?
+
+The framework is conceptually bilevel (inner loop + outer loop), but in the experiment we split the outer loop into two distinct responsibilities:
+
+- **Level 1.5 (config adjustment)**: Tactical — analyzes the inner loop's trace and adjusts runtime search parameters (freeze ineffective params, shift strategy from "explore" to "focused", inject textual guidance). This operates within the existing search framework without changing any code.
+
+- **Level 2 (mechanism discovery)**: Strategic — runs a multi-round research session to identify structural bottlenecks, generates new Python code (e.g., Tabu Search, Orthogonal Exploration), and injects it into the runner via `importlib`.
+
+This separation serves a key purpose: **it lets Level 2 focus purely on mechanism innovation**. Without Level 1.5 handling the tactical work (parameter freezing, strategy shifting), Level 2 would need to do both — tuning configs AND inventing mechanisms — which dilutes its research focus. The experiment tests whether this separation produces better results than either alone (Group B = 1.5 only, Group C = 1.5 + 2).
+
+### 2.3 Controlled Variables
 
 | Variable | Value | Rationale |
 |----------|-------|-----------|
