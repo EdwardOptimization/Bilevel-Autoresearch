@@ -27,7 +27,11 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Logs
+# Logs and build artifacts
 *.log
-experiments/paper_ablation/SERVERS.md
+*.blg
+*.bak_*
+
+# Secrets and credentials
 .aixiv_token
+experiments/paper_ablation/SERVERS.md

@@ -2,10 +2,10 @@
 
 **Autoresearch that researches itself.** An outer loop autonomously discovers new mechanisms for the inner loop — not by tuning prompts, but by inventing and code-generating structural changes to the search process.
 
+[![Paper](https://img.shields.io/badge/Paper-PDF-red.svg)](paper/bilevel-autoresearch/main.pdf)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![CI](https://github.com/EdwardOptimization/Bilevel-Autoresearch/actions/workflows/ci.yml/badge.svg)](https://github.com/EdwardOptimization/Bilevel-Autoresearch/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-44%20passing-brightgreen.svg)](tests/)
 
 ---
 
@@ -22,13 +22,13 @@ Both levels use the same pattern: **propose × evaluate × iterate**. The inner 
 
 On Karpathy's GPT pretraining benchmark (val_bpb, 300s budget, RTX 5090), we ran a controlled ablation with **3 groups × 3 independent repeats × 30 iterations**, using the **same LLM (DeepSeek)** for all levels:
 
-| Group | What it does | Mean Improvement |
-|-------|-------------|-----------------|
-| **A** — Level 1 | Standard autoresearch (propose → train → keep/discard) | -0.009 ± 0.001 |
-| **B** — Level 1 + 1.5 | + Outer loop adjusts search config | -0.007 ± 0.006 |
-| **C** — Level 1 + 1.5 + 2 | + Outer loop generates new mechanisms as code | **-0.045 ± 0.030** |
+| Group | What it does | Mean Δval_bpb | vs Group A |
+|-------|-------------|--------------|------------|
+| **A** — Level 1 | Standard autoresearch (propose → train → keep/discard) | -0.009 ± 0.001 | 1× |
+| **B** — Level 1 + 1.5 | + Outer loop adjusts search config | -0.007 ± 0.006 | 0.8× |
+| **C** — Level 1 + 1.5 + 2 | + Outer loop generates new mechanisms as code | **-0.045 ± 0.030** | **5×** |
 
-**Level 2 improves 5× over Level 1.** The outer loop autonomously generated Python code for new search mechanisms, dynamically loaded them via `importlib`, and injected them into the running inner loop.
+*Baseline val_bpb ≈ 1.10. More negative = better. 3 independent repeats × 30 iterations each.* The outer loop autonomously generated Python code for new search mechanisms, dynamically loaded them via `importlib`, and injected them into the running inner loop.
 
 ### Mechanisms discovered autonomously by Level 2
 
@@ -59,28 +59,29 @@ class TabuSearchManager:
         return False
 ```
 
-Full ablation report: [`experiments/paper_ablation/run2_results/REPORT.md`](experiments/paper_ablation/run2_results/REPORT.md) |
-Paper: [arxiv.260323.000006](https://aixiv.science/papers/aixiv.260323.000006)
+Full ablation report: [`experiments/paper_ablation/run2_results/REPORT.md`](experiments/paper_ablation/run2_results/REPORT.md) | Paper: [`paper/bilevel-autoresearch/main.pdf`](paper/bilevel-autoresearch/main.pdf)
 
 ---
 
 ## Quick Start
 
+**Prerequisites:** Python 3.10+, an LLM API key (DeepSeek, OpenAI, or Anthropic). Training demo also needs a GPU and [Karpathy's autoresearch](https://github.com/karpathy/autoresearch) cloned.
+
 ```bash
 pip install -e .
+cp .env.example .env  # fill in your API keys
 
-# Article optimization demo (needs MINIMAX_API_KEY + DEEPSEEK_API_KEY)
+# Training optimization — reproduce the paper result (needs GPU)
+git clone https://github.com/karpathy/autoresearch.git ~/karpathy_autoresearch
+python -m domains.train_opt.cli --provider deepseek bilevel --inner-budget 5 --outer-cycles 2
+
+# Article optimization — lightweight demo (no GPU needed, needs MINIMAX_API_KEY)
 python cli.py once --article article1                    # smoke test
 python cli.py run --articles article1 --max-inner 5 --max-outer 4   # full bilevel
-
-# Training optimization demo (needs GPU + DEEPSEEK_API_KEY + Karpathy's autoresearch)
-python -m domains.train_opt.cli --provider deepseek bilevel --inner-budget 5 --outer-cycles 2
 
 # Use any LLM provider
 python cli.py --provider openai --outer-provider openai run --max-inner 5
 ```
-
-See [`.env.example`](.env.example) for required API keys.
 
 ---
 
@@ -103,7 +104,8 @@ domains/
     ├── outer.py                  # Outer loop: trace analysis → config updates
     └── config.py                 # SearchConfig (outer loop's control surface)
 articles/                         # Article demo input data
-experiments/                      # Timestamped experiment records
+experiments/                      # Ablation results and experiment records
+paper/                            # LaTeX paper (submitted to AISC2026)
 tests/                            # 44 unit tests
 ```
 
