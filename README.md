@@ -107,7 +107,7 @@ domains/
 articles/                         # Article demo input data (root-level, referenced by path)
 experiments/                      # Ablation results and experiment records
 paper/                            # LaTeX paper (submitted to AISC2026)
-tests/                            # 44 unit tests
+tests/                            # 110 unit tests
 ```
 
 ---
