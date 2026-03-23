@@ -27,8 +27,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from core.base_mechanism_research import (
+    CODEGEN_SYSTEM,
+    CRITIQUE_PROMPT,
+    CRITIQUE_SYSTEM,
+    FIX_PROMPT,
+    BaseMechanismResearcher,
+)
 from core.inner_loop import InnerLoopController
-from core.llm_client import LLMClient
 from core.state import InnerLoopState, OuterLoopState
 
 from .pipeline.base import BaseStage
@@ -76,25 +82,6 @@ For EACH hypothesis:
 5. **Implementation complexity**: 1 (trivial) to 5 (major rewrite)
 """
 
-CRITIQUE_SYSTEM = """You are a rigorous critic. Your job is to find failure modes and
-implementation traps in proposed mechanism changes. Be specific and honest."""
-
-CRITIQUE_PROMPT = """\
-## Hypotheses to Critique
-
-{exploration}
-
----
-
-For each hypothesis, provide:
-1. **Most likely failure mode** — how could this make things worse?
-2. **Implementation trap** — what is the hardest part to get right in code?
-3. **Evidence from trace** — does the failure trace actually support this hypothesis?
-4. **Score**: impact (1–5) × feasibility (1–5) ÷ complexity (1–5)  →  final float
-
-End with: **Selected**: [hypothesis number] — one sentence why.
-"""
-
 SPECIFY_SYSTEM = """You are a senior engineer turning a research hypothesis into a
 precise implementation specification."""
 
@@ -120,9 +107,6 @@ Write a detailed implementation specification:
 
 Keep it concrete enough that a coder could implement without asking questions.
 """
-
-CODEGEN_SYSTEM = """You are an expert Python developer. Write clean, correct Python code.
-Return ONLY the Python source — no markdown fences, no explanation outside comments."""
 
 CODEGEN_PROMPT = """\
 ## Implementation Specification
@@ -177,22 +161,6 @@ Write the complete Python file. Start with the imports, then the class.
 Do NOT wrap in markdown fences. Return raw Python only.
 """
 
-FIX_PROMPT = """\
-The code you generated failed with this error:
-
-```
-{error}
-```
-
-Here is the code that failed:
-
-```python
-{code}
-```
-
-Fix the error. Return ONLY the corrected Python code (no fences, no explanation).
-"""
-
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
@@ -219,7 +187,7 @@ class MechanismResult:
 # Main class
 # ---------------------------------------------------------------------------
 
-class MechanismResearcher:
+class MechanismResearcher(BaseMechanismResearcher):
     """
     Runs one Level-2 research session: produces + validates a new pipeline stage.
 
@@ -239,9 +207,13 @@ class MechanismResearcher:
         max_code_retries: int = 3,
         artifacts_base: Path | None = None,
     ):
-        self.client = LLMClient(provider, api_key, model)
-        self.max_code_retries = max_code_retries
-        self.artifacts_base = artifacts_base or Path("artifacts/mechanism_research")
+        super().__init__(
+            model=model,
+            provider=provider,
+            api_key=api_key,
+            max_code_retries=max_code_retries,
+            artifacts_base=artifacts_base or Path("artifacts/mechanism_research"),
+        )
         self._generated_dir = Path(__file__).parent / "pipeline" / "generated"
 
     # ------------------------------------------------------------------
@@ -384,6 +356,41 @@ class MechanismResearcher:
         return validation
 
     # ------------------------------------------------------------------
+    # Abstract method implementations (BaseMechanismResearcher interface)
+    # ------------------------------------------------------------------
+
+    def _get_explore_prompt(self, **kwargs) -> tuple[str, str]:
+        return (
+            EXPLORE_PROMPT.format(
+                article_id=kwargs["article_id"],
+                n_cycles=kwargs["n_cycles"],
+                trace_summary=kwargs["trace_summary"],
+                lessons_summary=kwargs["lessons_summary"],
+            ),
+            EXPLORE_SYSTEM,
+        )
+
+    def _get_specify_prompt(
+        self,
+        selected_hypothesis: str,
+        critique: str,
+        **kwargs,
+    ) -> tuple[str, str]:
+        return (
+            SPECIFY_PROMPT.format(
+                selected_hypothesis=selected_hypothesis,
+                critique_notes=critique[-1500:],
+            ),
+            SPECIFY_SYSTEM,
+        )
+
+    def _get_codegen_prompt(self, spec: str, reference_code: str, **kwargs) -> str:
+        return CODEGEN_PROMPT.format(spec=spec, reference_stage=reference_code)
+
+    def _get_reference_code(self, **kwargs) -> str:
+        return self._read_reference_stage()
+
+    # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
 
@@ -481,14 +488,6 @@ class MechanismResearcher:
             )
         return code, self.max_code_retries
 
-    def _syntax_check(self, code: str) -> str | None:
-        """Return error string if code has syntax errors, else None."""
-        try:
-            compile(code, "<generated>", "exec")
-            return None
-        except SyntaxError as e:
-            return f"SyntaxError: {e}"
-
     def _save_code(self, code: str, stage_name: str, session_dir: Path) -> Path:
         """Write code to the generated/ directory and return the path."""
         filename = f"{stage_name}.py"
@@ -536,23 +535,6 @@ class MechanismResearcher:
         if ref_path.exists():
             return ref_path.read_text(encoding="utf-8")
         return "# (reference not available)"
-
-    def _extract_domain(self, exploration: str) -> str:
-        """Best-effort extraction of the domain the LLM mentioned first."""
-        for line in exploration.splitlines():
-            low = line.lower()
-            if "domain" in low or "field" in low or "inspired" in low:
-                return line.strip()[:120]
-        return exploration[:120]
-
-    def _strip_fences(self, code: str) -> str:
-        """Remove markdown code fences if the LLM added them anyway."""
-        lines = code.splitlines()
-        if lines and lines[0].strip().startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        return "\n".join(lines)
 
     def _save_summary(self, result: MechanismResult, session_dir: Path) -> None:
         summary = {

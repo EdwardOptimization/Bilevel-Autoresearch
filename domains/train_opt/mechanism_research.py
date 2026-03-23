@@ -28,7 +28,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-from core.llm_client import LLMClient
+from core.base_mechanism_research import (
+    CODEGEN_SYSTEM,
+    FIX_PROMPT,
+    BaseMechanismResearcher,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -129,9 +133,6 @@ Write a detailed implementation specification:
 Keep it concrete enough that a coder could implement without asking questions.
 """
 
-CODEGEN_SYSTEM = """You are an expert Python developer. Write clean, correct Python code.
-Return ONLY the Python source — no markdown fences, no explanation outside comments."""
-
 CODEGEN_PROMPT = """\
 ## Implementation Specification
 
@@ -185,22 +186,6 @@ Do NOT rewrite the entire runner.py. Do NOT wrap in markdown fences.
 Return raw Python only.
 """
 
-FIX_PROMPT = """\
-The code you generated failed with this error:
-
-```
-{error}
-```
-
-Here is the code that failed:
-
-```python
-{code}
-```
-
-Fix the error. Return ONLY the corrected Python code (no fences, no explanation).
-"""
-
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
@@ -227,7 +212,7 @@ class TrainMechanismResult:
 # Main class
 # ---------------------------------------------------------------------------
 
-class TrainMechanismResearcher:
+class TrainMechanismResearcher(BaseMechanismResearcher):
     """
     Runs one Level-2 research session for the training domain.
 
@@ -248,9 +233,55 @@ class TrainMechanismResearcher:
         provider: str = "deepseek",
         max_code_retries: int = 3,
     ):
-        self.client = LLMClient(provider, api_key, model)
-        self.max_code_retries = max_code_retries
+        super().__init__(
+            model=model,
+            provider=provider,
+            api_key=api_key,
+            max_code_retries=max_code_retries,
+        )
         self._runner_path = Path(__file__).parent / "runner.py"
+
+    # ------------------------------------------------------------------
+    # Abstract method implementations (BaseMechanismResearcher interface)
+    # ------------------------------------------------------------------
+
+    def _get_explore_prompt(self, **kwargs) -> tuple[str, str]:
+        return (
+            EXPLORE_PROMPT.format(
+                n_iters=kwargs["n_iters"],
+                trace_summary=kwargs["trace_summary"],
+                runner_summary=kwargs["runner_summary"],
+                bottleneck=kwargs["bottleneck"],
+            ),
+            EXPLORE_SYSTEM,
+        )
+
+    def _get_specify_prompt(
+        self,
+        selected_hypothesis: str,
+        critique: str,
+        **kwargs,
+    ) -> tuple[str, str]:
+        return (
+            SPECIFY_PROMPT.format(
+                selected_hypothesis=selected_hypothesis,
+                critique_notes=critique[-2000:],
+                runner_section=kwargs.get("runner_section", "")[:3000],
+            ),
+            SPECIFY_SYSTEM,
+        )
+
+    def _get_codegen_prompt(self, spec: str, reference_code: str, **kwargs) -> str:
+        return CODEGEN_PROMPT.format(
+            spec=spec,
+            reference_code=reference_code,
+            codegen_task=kwargs.get("codegen_task", ""),
+        )
+
+    def _get_reference_code(self, **kwargs) -> str:
+        runner_code = kwargs.get("runner_code", "")
+        impl_strategy = kwargs.get("impl_strategy", "new_helper_class")
+        return self._read_reference_code(runner_code, impl_strategy)
 
     # ------------------------------------------------------------------
     # Public API
@@ -839,27 +870,6 @@ class TrainMechanismResearcher:
         if idx != -1:
             return runner_code[idx: idx + 1000]
         return "(reference not available)"
-
-    # ------------------------------------------------------------------
-    # Utilities
-    # ------------------------------------------------------------------
-
-    def _syntax_check(self, code: str) -> str | None:
-        """Return error string if code has syntax errors, else None."""
-        try:
-            compile(code, "<generated>", "exec")
-            return None
-        except SyntaxError as e:
-            return f"SyntaxError: {e}"
-
-    def _strip_fences(self, code: str) -> str:
-        """Remove markdown code fences if the LLM added them anyway."""
-        lines = code.splitlines()
-        if lines and lines[0].strip().startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        return "\n".join(lines)
 
     def _save_summary(self, result: TrainMechanismResult, session_dir: Path) -> None:
         summary = {
