@@ -88,6 +88,7 @@ import math
 import random
 import re
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -927,7 +928,7 @@ class TrainRunner:
 
         try:
             result = subprocess.run(
-                ["python", str(run_path)],
+                [sys.executable, str(run_path)],
                 capture_output=True, text=True,
                 timeout=timeout,
                 cwd=str(self.work_dir),
