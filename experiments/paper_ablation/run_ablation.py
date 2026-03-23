@@ -550,8 +550,10 @@ def run_group_c(
                         "applied": False,
                     })
 
-        # Snapshot final runner.py for the run
-        shutil.copy2(run_runner_py, run_dir / "runner.py")
+        # Snapshot final runner.py for the run (skip if already in run_dir)
+        snapshot_dest = run_dir / "runner_final.py"
+        if run_runner_py.resolve() != snapshot_dest.resolve():
+            shutil.copy2(run_runner_py, snapshot_dest)
 
         improvement = (baseline_bpb - best_bpb_overall) if baseline_bpb is not None else 0.0
         report = {
