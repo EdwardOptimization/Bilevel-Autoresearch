@@ -61,7 +61,7 @@ class TabuSearchManager:
         return False
 ```
 
-Full ablation report: [`experiments/ablations/paper_ablation/run2_results/REPORT.md`](experiments/ablations/paper_ablation/run2_results/REPORT.md) | Paper: [`paper/bilevel-autoresearch/main.pdf`](paper/bilevel-autoresearch/main.pdf)
+Full ablation report: [`experiments/ablations/paper_ablation/run2_results/REPORT.md`](experiments/ablations/paper_ablation/run2_results/REPORT.md)
 
 ---
 
