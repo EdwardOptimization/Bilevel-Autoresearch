@@ -2,7 +2,7 @@
 
 **Autoresearch that researches itself.** An outer loop autonomously discovers new mechanisms for the inner loop — not by tuning prompts, but by inventing and code-generating structural changes to the search process.
 
-**Paper:** [Bilevel Autoresearch: When the Optimization Loop Optimizes Itself](https://aixiv.science/abs/aixiv.260323.000006) (AISC 2026)
+**Paper:** [Bilevel Autoresearch: When the Optimization Loop Optimizes Itself](https://aixiv.science/abs/aixiv.260323.000006) (AISC 2026 — The AI Scientists Conference)
 
 [![Paper](https://img.shields.io/badge/Paper-PDF-red.svg)](https://aixiv.science/abs/aixiv.260323.000006)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
