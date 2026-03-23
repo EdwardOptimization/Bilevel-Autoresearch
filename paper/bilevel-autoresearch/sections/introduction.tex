@@ -1,0 +1,89 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Large language models have demonstrated a striking capacity for self-directed
+scientific iteration: given a task, an LLM can propose a change, execute an
+experiment, observe the outcome, and decide whether to keep or discard the
+change.
+When repeated, this propose--execute--evaluate loop constitutes a form of
+automated research~\citep{karpathy2026autoresearch}.
+Instantiated for neural network hyperparameter search, we call this loop
+\emph{autoresearch}.
+
+Despite its promise, autoresearch as currently practiced has a fundamental
+limitation: the search \emph{mechanism} is fixed at design time.
+Every system in the literature uses a human-engineered architecture.
+\citet{karpathy2026autoresearch} introduced the single-track inner loop with a
+keep/discard acceptance rule.
+AutoResearchClaw~\citep{aiminglab2026claw} extended it with multi-batch parallel
+search.
+EvoScientist~\citep{evoscientist2026} added persistent experience memory across
+runs.
+A human designed each improvement by reading the prior system's code,
+identifying a bottleneck, and writing new code to address it.
+The systems themselves cannot perform this operation.
+
+This raises a natural question: \emph{can an outer loop perform that same
+design step autonomously?}
+Can the system read its own inner loop's code, identify structural bottlenecks,
+generate new Python code to address them, and inject that code at runtime---all
+without human involvement?
+
+We answer this question affirmatively.
+We present \textbf{\methodname{}}, a bilevel framework with three operational
+levels:
+\begin{itemize}
+  \item \textbf{Level~1} (inner loop) runs the standard autoresearch cycle: an
+        LLM proposes a configuration change, the model trains for a fixed budget,
+        validation loss (\valbpb{}) is measured, and the change is kept or
+        discarded.
+  \item \textbf{Level~1.5} (outer loop) executes every five inner iterations.
+        It analyzes the accumulated search trace, freezes parameters that have
+        failed repeatedly, unfreezes under-explored parameters, and injects
+        strategic guidance text into the next inner cycle.
+  \item \textbf{Level~2} (mechanism research) executes every two outer cycles.
+        It conducts a structured 4-round research session---Explore, Critique,
+        Specify, Generate---producing Python code that implements a novel search
+        mechanism.
+        The code is patched into the inner loop's runner module via
+        \texttt{importlib} dynamic loading and validated before activation.
+\end{itemize}
+
+Crucially, all three levels use the same LLM (DeepSeek \texttt{deepseek-chat}).
+Any improvement in search effectiveness therefore comes from the bilevel
+\emph{architecture}, not from access to a more capable model.
+
+We evaluate three experimental groups on Karpathy's GPT pretraining benchmark:
+Group~A (Level~1 only), Group~B (Levels~1 and~1.5), and Group~C (all three
+levels).
+The primary metric is \valbpb{} improvement within a 30-iteration budget using a
+300-second training window per iteration, matching the original benchmark
+specification.
+All groups start from the same baseline configuration and use identical GPU
+hardware (RTX~5090).
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item We formalize autoresearch as a bilevel optimization problem in which the
+        upper level optimizes the search \emph{mechanism} (runner code) and the
+        lower level optimizes the task (training configuration), and demonstrate
+        that the upper level can be solved by LLM code generation.
+  \item We implement Level~2 mechanism research via a 4-round LLM dialogue and
+        runtime code injection, establishing a concrete realization of a
+        self-modifying autoresearch system.
+  \item We report a controlled ablation showing that Level~2 produces a
+        5$\times$ improvement over the Level-1 baseline ($-0.045 \pm 0.030$
+        vs.\ $-0.009 \pm 0.001$), with Level~2 autonomously generating
+        mechanisms drawn from four distinct algorithmic domains.
+  \item We identify why Level~2 succeeds: the generated mechanisms (Tabu
+        Search, Multi-Scale Bandit, Orthogonal Exploration) forced exploration
+        of \texttt{TOTAL\_BATCH\_SIZE} \emph{reduction}, a direction that the
+        LLM's default search path systematically avoids due to an implicit bias
+        toward larger batches.
+\end{enumerate}
+
+\Cref{sec:related} reviews related work.
+\Cref{sec:methods} describes the framework in detail.
+\Cref{sec:results} presents ablation results.
+\Cref{sec:discussion} interprets hypotheses, failure modes, and limitations.
+\Cref{sec:conclusion} concludes.

@@ -1,0 +1,134 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Hypothesis Testing}
+
+The experimental design is motivated by three hypotheses.
+
+\textbf{H1 (Group~B $>$ Group~A): Not supported.}
+Group~B's mean improvement ($-0.007 \pm 0.006$) is numerically worse than
+Group~A's ($-0.009 \pm 0.001$), though the difference is not meaningful given
+$n=3$.
+The outer loop (Level~1.5) increases search diversity---Group~B explores more
+parameters than Group~A---but this diversity does not translate into larger
+improvements within the 30-iteration budget.
+Group~B's R1 achieved essentially zero improvement ($-0.000$), the worst
+outcome of any repeat in any group.
+The outer loop correctly froze stalled parameters but, having done so, the LLM
+found nothing better in the remaining search space.
+
+\textbf{H2 (Group~C $>$ Group~B): Supported.}
+Group~C's mean absolute improvement ($-0.045 \pm 0.030$) is 6.4$\times$
+Group~B's ($-0.007 \pm 0.006$).
+Despite high variance ($\pm 0.030$), two of three repeats produced dramatic
+improvements ($-0.065$, $-0.058$), and the separation between Groups~C and~B
+is large relative to the within-group variance, providing meaningful evidence
+that Level~2 adds value beyond Level~1.5.
+
+\textbf{H3 (Level~2 discovers novel mechanisms autonomously): Supported.}
+Across three independent repeats, Level~2 generated mechanisms from four
+distinct domains (combinatorial optimization, online learning, Bayesian
+optimization, DOE) without being told which domains to consider.
+Code generation succeeded on the first attempt in all six sessions (zero
+retries).
+Five of six mechanisms passed import validation and were activated.
+
+\subsection{Why Level~1.5 Alone Is Insufficient}
+
+Level~1.5 can diagnose search problems---it correctly identifies when a
+parameter has been attempted repeatedly without improvement---and it can
+redirect search by adjusting which parameters are active.
+However, it is structurally limited to operating within the existing search
+framework.
+It cannot change how proposals are generated, modify the acceptance criterion,
+add pre-filtering steps, or introduce new search paradigms such as tabu lists,
+bandit selection, or orthogonal sampling.
+Only Level~2 can produce such code changes.
+This structural ceiling explains why H1 is not supported: parameter
+redirection alone is insufficient to escape the LLM's deterministic
+proposal patterns.
+
+\subsection{Why Group~C's R2 Underperformed}
+
+Group~C's R2 achieved only $-0.011$ improvement, comparable to Groups~A and~B,
+despite receiving Level~2 mechanisms.
+The most likely explanation is mechanism quality: R2's Level~2 generated the
+Multi-Scale Bandit Proposer, which---while valid and correctly injected---may
+be less effective than R1's Tabu Search Manager or R3's Orthogonal Exploration
+at forcing exploration of the batch size dimension.
+A secondary factor is overhead: each Level~2 research session requires
+approximately 3~minutes of wall time (four LLM calls), reducing effective inner
+iterations.
+With two sessions per repeat, Group~C has roughly 6~minutes less search time
+than Groups~A and~B, a minor but non-zero cost.
+
+\subsection{Limitations}
+
+\paragraph{Small sample size.}
+Three repeats per group is insufficient for rigorous statistical comparison.
+Group~C's standard deviation ($\pm 0.030$) is 67\% of its mean, indicating
+high variability.
+Reliable estimates would require $n \geq 10$ repeats per group.
+
+\paragraph{Baseline variance.}
+Baseline \valbpb{} varies across repeats (1.094--1.114) due to training
+randomness from data ordering and weight initialization.
+Using $\Delta = \text{baseline} - \text{best}$ mitigates this but does not
+eliminate it; a lower baseline gives less headroom for improvement.
+Future work should use fixed random seeds or report baseline-normalized metrics.
+
+\paragraph{Single benchmark.}
+All results are on one task: GPT pretraining at 50M parameters with a 300-second
+budget on RTX~5090.
+Generalization to other model sizes, training budgets, or tasks is unproven.
+
+\paragraph{Dynamic load fragility.}
+A preliminary run was invalidated because the Level~2 dynamic loading pipeline
+contained a \texttt{sys.modules} registration bug, causing all mechanism
+injections to silently fall back to the original runner.
+We fixed the bug before conducting the three reported repeats.
+This episode highlights the fragility of runtime code injection: silent
+fallback without error is a dangerous failure mode.
+
+\paragraph{External dependency exposure.}
+Level~2 has no constraint preventing it from importing external libraries.
+One of six generated mechanisms (GP Regressor) required \texttt{sklearn}, which
+was not installed.
+The validate-and-revert mechanism handled this correctly, but the exposure to
+arbitrary dependencies remains a reliability risk.
+
+\subsection{Unexpected Findings}
+
+\paragraph{Group~A's search is near-deterministic.}
+Given the same baseline \texttt{train.py}, DeepSeek generates almost the same
+proposal sequence across all three repeats.
+Group~A's three repeats are therefore not independent samples in the usual
+sense: they are three runs of the same near-deterministic process, perturbed
+only by training noise.
+This determinism is itself a finding: LLMs hold strong priors about which
+hyperparameter changes to try first, and the inner loop alone cannot escape
+those priors.
+
+\paragraph{Level~2 selects diverse domains without guidance.}
+The Level~2 prompt instructs the model to ``propose mechanism improvements''
+but does not suggest which algorithmic domains to consider.
+Across three independent repeats, the model independently chose combinatorial
+optimization, online learning, Bayesian optimization, and design of
+experiments.
+The LLM's breadth of knowledge therefore enables genuine exploration at the
+mechanism level, not just at the configuration level.
+
+\subsection{Future Work}
+
+Key directions for extending this work include:
+(1) scaling to $n \geq 10$ repeats with fixed random seeds for statistical
+    power;
+(2) constraining Level~2 to pure-Python code without external imports, avoiding
+    dependency failures;
+(3) evaluating on multiple benchmarks (different model sizes, tasks, budgets)
+    to assess generalization;
+(4) adding a fourth group (Level~1 with \texttt{simple\_mode=False}) to
+    isolate the contribution of pre-baked mechanisms vs.\ autonomously
+    discovered ones; and
+(5) investigating whether Level~2's code generation quality can be improved
+    by providing a richer interface specification or a test harness.

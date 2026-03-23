@@ -1,0 +1,26 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented \methodname{}, a bilevel framework in which an outer loop
+autonomously discovers and injects structural changes into an inner autoresearch
+loop.
+The key result is that Level~2---an autonomous mechanism research agent that
+writes and loads Python code at runtime---produces a 5$\times$ improvement in
+\valbpb{} over the Level-1 baseline on Karpathy's GPT pretraining benchmark,
+using the same DeepSeek model at every level.
+Level~1.5 alone does not reliably improve over the pure inner loop, confirming
+that parameter-level adjustment is insufficient to escape the LLM's
+deterministic search patterns; structural modification of the loop is required.
+
+Level~2's mechanisms---Tabu Search Manager, Multi-Scale Bandit Proposer, and
+Systematic Orthogonal Exploration---were drawn from four distinct algorithmic
+domains and discovered without human specification, across three independent
+repeats.
+These mechanisms succeeded by forcing exploration of a search direction
+(\texttt{TOTAL\_BATCH\_SIZE} reduction) that the LLM's default priors
+systematically avoid.
+
+The core principle is validated: \emph{autoresearch can research itself.}
+The outer loop need not be human-designed; the same model that runs the inner
+loop can generate it, discovering structural improvements that previously
+required a human researcher to write.

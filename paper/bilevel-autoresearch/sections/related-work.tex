@@ -1,0 +1,86 @@
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Autoresearch and LLM-Driven Optimization}
+
+\citet{karpathy2026autoresearch} introduced the paradigmatic autoresearch loop
+for neural network hyperparameter search: an LLM reads a training script,
+proposes a configuration change, executes training for a fixed budget, measures
+validation loss, and accepts or rejects the change.
+Iterated, this constitutes a form of LLM-guided hill climbing in configuration
+space, where the LLM's world knowledge serves as an implicit prior over
+promising changes and training outcomes provide gradient-free feedback.
+
+AutoResearchClaw~\citep{aiminglab2026claw} extends this framework with
+multi-batch parallelism: several candidate configurations are evaluated
+simultaneously, and the best is promoted.
+This increases the effective branching factor of search without altering the
+underlying acceptance mechanism.
+
+EvoScientist~\citep{evoscientist2026} introduces persistent experience memory:
+lessons from prior runs are summarized and injected into future proposals,
+enabling cross-run learning.
+Both of these enhancements were designed by human researchers who inspected the
+prior system's code and identified architectural gaps.
+In all three systems, the structural decisions---when to accept, how to
+propose, what state to maintain---are made by human designers, not by the
+system itself.
+
+\subsection{Bilevel Optimization}
+
+Bilevel optimization~\citep{colson2007overview,sinha2018review} studies
+problems of the form
+$\min_{\phi}\, F\!\left(\phi,\, \theta^{*}(\phi)\right)$
+subject to $\theta^{*}(\phi) \in \arg\min_{\theta}\, f(\theta, \phi)$,
+where an upper-level objective $F$ depends on the optimal solution of a
+lower-level problem parameterized by $\phi$.
+Applications include meta-learning~\citep{franceschi2018bilevel},
+neural architecture search~\citep{liu2018darts}, and hyperparameter
+optimization~\citep{feurer2019hyperparameter}.
+In our setting the upper level optimizes the search \emph{mechanism} $\phi$
+(the runner code) and the lower level optimizes the task performance $\theta$
+(the training configuration).
+The key departure from classical bilevel optimization is that $\phi$ is a
+program---a discrete artifact produced by code generation---rather than a
+real-valued parameter vector.
+
+\subsection{LLM-Based Code Generation for Research}
+
+AlphaCode~\citep{li2022competition} and Codex~\citep{chen2021evaluating}
+demonstrated that LLMs can write functionally correct programs from natural
+language specifications.
+FunSearch~\citep{romera2024mathematical} extended this to scientific
+discovery, using an LLM to iteratively generate and evaluate mathematical
+programs, finding new results in combinatorics.
+Most directly related is the line of work on LLM-driven algorithm
+design~\citep{liu2024evolution,lehman2023evolution}, in which LLMs propose
+novel algorithmic variants that are then evaluated on benchmark tasks.
+Our Level~2 agent applies the same code generation capacity to a different
+target: rather than generating task-level programs, it generates
+\emph{search mechanism code} that is injected into the inner loop at runtime.
+
+\subsection{Meta-Learning and Algorithm Configuration}
+
+Meta-learning~\citep{hospedales2021meta} trains models to learn efficiently
+from few examples by optimizing across a distribution of tasks.
+Algorithm configuration~\citep{hutter2011smac} and algorithm
+selection~\citep{rice1976algorithm} choose among candidate algorithms or
+parameter settings for a given problem instance.
+Portfolio methods~\citep{xu2008satzilla} maintain a library of algorithms and
+select among them.
+\methodname{} operates in a similar spirit---the outer loop selects or
+generates a search mechanism---but uses LLM code generation rather than
+gradient-based meta-optimization or a fixed portfolio.
+
+\subsection{Position of This Work}
+
+The key distinction between \methodname{} and all prior work is the
+\emph{target} of the outer loop.
+Level~1.5 is closest to existing outer loops (curriculum schedulers, adaptive
+configuration) in that it adjusts parameters of the existing mechanism.
+Level~2 is categorically different: it generates code that \emph{replaces} the
+mechanism entirely.
+To our knowledge, \methodname{} is the first system in which an autonomous
+outer loop writes and injects code that modifies the structural logic of the
+inner autoresearch loop at runtime, using the same model that runs the inner
+loop.

@@ -1,0 +1,166 @@
+\section{Methods}
+\label{sec:methods}
+
+\subsection{Framework Overview}
+
+\methodname{} is organized as three nested operational levels.
+The inner loop (Level~1) optimizes the task; the outer loop (Level~1.5)
+optimizes the inner loop's search parameters; Level~2 optimizes the inner
+loop's search \emph{mechanism} by generating and injecting new code.
+All levels share the same DeepSeek \texttt{deepseek-chat} model; no stronger
+model is used at any outer level.
+
+\subsection{Level~1: Inner Autoresearch Loop}
+
+The inner loop implements the standard autoresearch cycle
+\citep{karpathy2026autoresearch}.
+At each iteration $t$:
+\begin{enumerate}
+  \item The LLM receives the current \texttt{train.py} (frozen at the best
+        accepted configuration), the list of active editable parameters, any
+        frozen parameters, and a strategic guidance string injected by
+        Level~1.5.
+  \item The LLM proposes a change: a set of parameter name--value pairs and a
+        one-sentence hypothesis.
+  \item The change is applied to a working copy of \texttt{train.py} and
+        training runs for a fixed 300-second budget.
+  \item If the resulting \valbpb{} is lower than the current best, the change
+        is \emph{kept} (the best copy is updated); otherwise it is
+        \emph{discarded}.
+\end{enumerate}
+The iteration budget is fixed at 30 per repeat.
+The initial configuration locks \texttt{DEPTH=8} and \texttt{ASPECT\_RATIO=64}
+to prevent architecture-size changes; all other parameters (\texttt{LR},
+\texttt{WEIGHT\_DECAY}, \texttt{WINDOW\_PATTERN}, \texttt{HEAD\_DIM},
+\texttt{TOTAL\_BATCH\_SIZE}, etc.) are editable.
+
+\subsection{Level~1.5: Outer Search-Strategy Loop}
+
+Level~1.5 executes every 5 inner iterations.
+It receives the full trace of proposals and outcomes and produces a
+\texttt{SearchConfig} update:
+\begin{itemize}
+  \item \textbf{Freeze} parameters that have been proposed $\geq k$ times with
+        zero net improvement (default $k=3$).
+  \item \textbf{Unfreeze} parameters that were frozen but have not been
+        explored since the search moved to a new region.
+  \item \textbf{Inject} a guidance string instructing the inner loop to
+        prioritize under-explored parameters.
+\end{itemize}
+Level~1.5 can redirect search diversity but cannot change the proposal
+generation logic, the acceptance criterion, or the loop structure.
+These structural changes require Level~2.
+
+\subsection{Level~2: Mechanism Research and Code Injection}
+
+Level~2 executes every 2 outer cycles.
+It conducts a 4-round structured dialogue, each round making a single LLM call:
+
+\begin{enumerate}
+  \item \textbf{Explore.} The LLM reads the full \texttt{runner.py} source and
+        the search trace.
+        It surveys mechanisms from adjacent fields (combinatorial optimization,
+        online learning, design of experiments, Bayesian optimization) and
+        proposes candidate improvements.
+  \item \textbf{Critique.} The LLM evaluates the candidate mechanisms against
+        the observed failure mode (e.g., repetitive proposals, parameter
+        fixation) and selects the most promising one.
+  \item \textbf{Specify.} The LLM writes a precise interface specification:
+        class name, constructor arguments, key methods with signatures, and
+        integration points in \texttt{runner.py}.
+  \item \textbf{Generate.} The LLM writes complete, runnable Python code
+        implementing the specified mechanism, including any modifications to
+        \texttt{runner.py} required to call it.
+\end{enumerate}
+
+The generated code is applied by patching \texttt{runner.py} in place.
+Before activation, the patched module is loaded via
+\texttt{importlib.util.spec\_from\_file\_location} with explicit
+\texttt{sys.modules} registration (required to support
+\texttt{@dataclass} decorators).
+If the import succeeds, the patched runner replaces the active runner for
+subsequent inner iterations.
+If the import fails (e.g., missing dependency), the original runner is
+restored from a pre-patch backup and the failure is logged.
+This validate-and-revert mechanism ensures that Level~2 failures are
+non-destructive.
+
+\subsection{Bilevel Optimization Formulation}
+
+Let $\phi$ denote the runner code (the mechanism) and $\theta$ the
+configuration of \texttt{train.py}.
+The bilevel objective is:
+\begin{equation}
+  \min_{\phi}\; F\!\left(\phi,\, \theta^{*}(\phi)\right)
+  \quad \text{s.t.} \quad
+  \theta^{*}(\phi) \;=\; \arg\min_{\theta}\; f(\theta, \phi),
+  \label{eq:bilevel}
+\end{equation}
+where $f(\theta, \phi) = \valbpb{}(\theta)$ is the validation bits-per-byte of
+the model trained with configuration $\theta$ under runner mechanism $\phi$, and
+$F(\phi, \theta^*) = \valbpb{}(\theta^*)$ is the best achievable validation loss
+under $\phi$.
+Level~2 approximately solves the upper problem by code generation; Level~1
+approximately solves the lower problem by LLM-guided hill climbing.
+
+\subsection{Algorithm}
+
+\begin{algorithm}[t]
+\caption{\methodname{} (Group~C configuration)}
+\label{alg:bilevel}
+\begin{algorithmic}
+\STATE \textbf{Input:} baseline \texttt{train.py}, runner $\phi_0$, budgets
+       $T{=}30$, $K{=}5$ (outer period), $M{=}2$ (L2 period)
+\STATE $\theta \leftarrow$ baseline config;\; $\phi \leftarrow \phi_0$;\;
+       $t \leftarrow 0$;\; outer\_cycle $\leftarrow 0$
+\WHILE{$t < T$}
+  \FOR{$k = 1$ \TO $K$}
+    \STATE proposal $\leftarrow$ \textsc{LLMPropose}($\theta$, $\phi$,
+           guidance)
+    \STATE $\theta' \leftarrow \theta \oplus$ proposal
+    \STATE val $\leftarrow$ \textsc{Train}($\theta'$, budget$=$300s)
+    \IF{val $<$ \textsc{BestVal}}
+      \STATE $\theta \leftarrow \theta'$;\; \textsc{BestVal} $\leftarrow$ val
+    \ENDIF
+    \STATE $t \leftarrow t + 1$
+  \ENDFOR
+  \STATE guidance, frozen $\leftarrow$ \textsc{Level1.5}(trace)
+  \STATE outer\_cycle $\leftarrow$ outer\_cycle $+ 1$
+  \IF{outer\_cycle $\bmod M = 0$}
+    \STATE $\phi' \leftarrow$ \textsc{Level2Research}($\phi$, trace)
+    \IF{\textsc{ValidateImport}($\phi'$)}
+      \STATE $\phi \leftarrow \phi'$
+    \ELSE
+      \STATE \textbf{revert} $\phi$
+    \ENDIF
+  \ENDIF
+\ENDWHILE
+\STATE \textbf{return} $\theta$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Experimental Design}
+
+Three groups isolate the contribution of each level (\cref{tab:groups}).
+All variables are held constant across groups: LLM model, GPU hardware
+(RTX~5090 32\,GB, three independent servers), 300-second training budget,
+30-iteration search budget, and baseline \texttt{train.py}.
+Each group runs 3 independent repeats; \texttt{train.py} is restored to the
+original baseline between repeats (verified by log inspection).
+The primary metric is $\Delta = \text{best} - \text{baseline}$ \valbpb{}
+(more negative indicates greater improvement).
+
+\begin{table}[t]
+\centering
+\caption{Experimental groups.}
+\label{tab:groups}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Group & Levels Active & Description \\
+\midrule
+A & Level~1 only & Pure autoresearch, no outer intervention \\
+B & Level~1 + 1.5 & Inner loop plus outer strategy adjustment \\
+C & Level~1 + 1.5 + 2 & Full bilevel with mechanism research \\
+\bottomrule
+\end{tabular}
+\end{table}

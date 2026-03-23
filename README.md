@@ -18,49 +18,49 @@ Outer loop:  Optimizes how the inner loop works (analyze trace → modify mechan
 
 Both levels use the same pattern: **propose × evaluate × iterate**. The inner loop improves the task. The outer loop improves the inner loop — not by tuning prompts, but by structurally changing how it searches.
 
-## Key Result
+## Key Result: Controlled Ablation Experiment
 
-A Level 2 agent ran autonomously for 7 rounds on Karpathy's GPT pretraining benchmark. It invented **12 mechanisms** without human specification:
+On Karpathy's GPT pretraining benchmark (val_bpb, 300s budget, RTX 5090), we ran a controlled ablation with **3 groups × 3 independent repeats × 30 iterations**, using the **same LLM (DeepSeek)** for all levels:
 
-| Mechanism | Inspired By | What It Changed |
-|-----------|------------|-----------------|
-| ElitePool + Crossover | Evolutionary algorithms | Proposal generation: LLM + population-based interpolation |
-| Simulated Annealing | Statistical mechanics | Keep/discard: probabilistic acceptance of regressions |
-| Plateau Detector | Signal processing | Loop behavior: force diversification when stuck |
-| Momentum Tracker | Gradient optimization | Proposal context: directional signals from history |
-| Crash Memory | Software engineering | Proposal context: warn about crash-causing params |
-| Freeze Limit | Control theory | Outer loop: prevent over-constraining the search space |
+| Group | What it does | Mean Improvement |
+|-------|-------------|-----------------|
+| **A** — Level 1 | Standard autoresearch (propose → train → keep/discard) | -0.009 ± 0.001 |
+| **B** — Level 1 + 1.5 | + Outer loop adjusts search config | -0.007 ± 0.006 |
+| **C** — Level 1 + 1.5 + 2 | + Outer loop generates new mechanisms as code | **-0.045 ± 0.030** |
 
-```
-val_bpb: 1.393 → 1.219    Search efficiency: 36% → 91%    Crash rate: 27% → 0%
-```
+**Level 2 improves 5× over Level 1.** The outer loop autonomously generated Python code for new search mechanisms, dynamically loaded them via `importlib`, and injected them into the running inner loop.
 
-**Example: agent-generated mechanism** (ElitePool crossover, invented in Round 3):
+### Mechanisms discovered autonomously by Level 2
+
+Each repeat independently discovered different mechanisms from different domains — no human specified which domains to explore:
+
+| Mechanism | Domain | What It Does |
+|-----------|--------|-------------|
+| **Tabu Search Manager** | Combinatorial optimization | Prevents revisiting recently explored parameter regions |
+| **Multi-Scale Bandit** | Online learning / MAB | Balances exploration and exploitation across parameters |
+| **Orthogonal Exploration** | Design of experiments | Forces search across orthogonal parameter dimensions |
+| **GP Regressor** (reverted) | Bayesian optimization | Surrogate model for val_bpb prediction (sklearn not installed) |
+
+### Why Level 2 wins
+
+Group A (no outer loop) follows a **deterministic search path** — it tries WEIGHT_DECAY, then WINDOW_PATTERN, then gets stuck repeating the same proposals for 20+ iterations. Level 2's mechanisms (Tabu Search, Orthogonal Exploration) break this loop and guide the LLM to discover that **reducing TOTAL_BATCH_SIZE** dramatically improves val_bpb — a direction A and B never explored.
 
 ```python
-# The Level 2 agent wrote this code autonomously and injected it into the inner loop
-def generate_crossover(self, current_config: dict, active_params: list[str]) -> dict | None:
-    """Interpolate between top-2 elite configs to generate a new candidate."""
-    if len(self._pool) < 2:
-        return None
-    best_config = self._pool[0][1]
-    second_config = self._pool[1][1]
-    changes = {}
-    for param in active_params:
-        if param not in best_config or param not in second_config:
-            continue
-        try:
-            v1 = float(eval(str(best_config[param])))
-            v2 = float(eval(str(second_config[param])))
-            alpha = 0.6 + random.uniform(-0.15, 0.15)   # weighted interpolation
-            interpolated = round(alpha * v1 + (1 - alpha) * v2, 6)
-            changes[param] = interpolated
-        except (ValueError, TypeError):
-            continue
-    return {"changes": changes, "hypothesis": "Crossover between elite configs"} if changes else None
+# Agent-generated mechanism: Tabu Search prevents the LLM from repeating failed proposals
+class TabuSearchManager:
+    def __init__(self, max_tabu_size=10):
+        self._tabu_list = []  # recently visited parameter regions
+
+    def is_tabu(self, changes: dict) -> bool:
+        """Check if proposed changes are too similar to recent attempts."""
+        for tabu_entry in self._tabu_list:
+            if self._similarity(changes, tabu_entry) > 0.8:
+                return True  # block this proposal, force the LLM to try something new
+        return False
 ```
 
-Full report: [`experiments/train_opt_20260322/REPORT.md`](experiments/train_opt_20260322/REPORT.md)
+Full ablation report: [`experiments/paper_ablation/run2_results/REPORT.md`](experiments/paper_ablation/run2_results/REPORT.md) |
+Paper: [arxiv.260323.000006](https://aixiv.science/papers/aixiv.260323.000006)
 
 ---
 
@@ -117,7 +117,7 @@ Two demo domains are included:
 
 **Article optimization** — 5-stage pipeline (Analysis → Hypotheses → Planning → Assessment → Revision) evaluated against a rubric. Outer loop injects prompt overrides. Level 2 generates new pipeline stages via `importlib`.
 
-**Training optimization** — LLM proposes hyperparameter changes to Karpathy's `train.py`, trains for 2 minutes, measures `val_bpb`. Outer loop freezes ineffective params and shifts strategy. Level 2 agent invented CrashMemory, MultiCandidate, ElitePool+Crossover, SimulatedAnnealing, PlateauDetector, and more.
+**Training optimization** — LLM proposes hyperparameter changes to Karpathy's `train.py`, trains for 5 minutes, measures `val_bpb`. Outer loop freezes ineffective params and shifts strategy. Level 2 generates new Python mechanisms (Tabu Search, Multi-Scale Bandit, Orthogonal Exploration) and injects them via `importlib`. Validated with 3×3 ablation on RTX 5090 — Level 2 achieves 5× improvement over baseline autoresearch.
 
 ---
 

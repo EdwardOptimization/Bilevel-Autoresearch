@@ -1,0 +1,24 @@
+\begin{abstract}
+Autoresearch systems iterate an LLM-driven propose--train--evaluate loop to
+improve a target task, but their search mechanisms are fixed at design time.
+Human researchers introduce improvements such as multi-batch parallelism or
+persistent memory; the system itself cannot.
+We present \methodname{}, a two-level framework in which an outer loop
+autonomously discovers and injects new search mechanisms into the inner loop.
+Level~1 runs the standard autoresearch loop; Level~1.5 analyzes the search
+trace and adjusts active parameters; Level~2 conducts a 4-round research
+session (Explore, Critique, Specify, Generate) and writes Python code that
+structurally modifies the inner loop at runtime via \texttt{importlib}.
+We evaluate three configurations on Karpathy's GPT pretraining benchmark
+(\valbpb{}) using the same DeepSeek model at every level.
+Adding Level~1.5 alone (Group~B) yields no reliable gain over the pure inner
+loop (Group~A): $-0.007 \pm 0.006$ vs.\ $-0.009 \pm 0.001$.
+Adding Level~2 (Group~C) achieves $-0.045 \pm 0.030$, a 5$\times$ improvement
+over Group~A.
+Across three independent repeats, Level~2 autonomously generates mechanisms
+from four distinct domains---combinatorial optimization, multi-armed bandits,
+Bayesian optimization, and design of experiments---without human specification.
+These results validate the principle that \emph{autoresearch can research
+itself}: structural modification of the search loop, not merely parameter
+adjustment, is the decisive lever for large performance gains.
+\end{abstract}
