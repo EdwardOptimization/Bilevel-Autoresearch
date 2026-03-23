@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 # Karpathy's autoresearch directory
 AUTORESEARCH_DIR = Path(os.environ.get(
     "AUTORESEARCH_DIR",
-    str(Path(__file__).parent.parent.parent.parent / "karpathy_autoresearch"),
+    str(Path.home() / "karpathy_autoresearch"),
 ))
 
 
