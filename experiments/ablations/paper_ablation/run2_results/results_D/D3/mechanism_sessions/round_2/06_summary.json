@@ -1,0 +1,8 @@
+{
+  "session_id": "20260324_182356",
+  "mechanism_name": "adaptive_step_calibrator",
+  "implementation_strategy": "replace_method",
+  "target": "StepSizeCalibrator` class (currently at Improvement 11)",
+  "code_retries": 0,
+  "hypothesis": "**Selected**: Hypothesis 2 — It directly targets the observed problem of erratic step sizes with minimal complexity and clear upside, building naturally on existing infrastructure."
+}

@@ -1,0 +1,8 @@
+{
+  "session_id": "20260324_121522",
+  "mechanism_name": "fixation_detector",
+  "implementation_strategy": "new_helper_class",
+  "target": "New class `FixationDetector` to be instantiated in `TrainRunner.__init__",
+  "code_retries": 0,
+  "hypothesis": "**Selected**: Hypothesis 2 — It directly addresses the observed fixation behavior with minimal complexity and clear failure modes that are easier to monitor and correct than the statistical approaches."
+}

@@ -15,7 +15,7 @@ independent repeats.
   randomness (range 1.094--1.114).
   Group~C's mean improvement is 5$\times$ that of Group~A and 7.5$\times$ that
   of Group~B (by absolute $|\Delta|$).
-  Bold values indicate the two best Group~C repeats.%
+  Bold values indicate the best repeat within Groups~C and~D.%
 }
 \label{tab:main}
 \begin{tabular}{@{}lrrrr@{}}
@@ -25,6 +25,7 @@ Group & R1 & R2 & R3 & Mean $\pm$ Std \\
 A (Level~1)         & $-0.009$ & $-0.008$ & $-0.011$ & $-0.009 \pm 0.002$ \\
 B (Level~1 + 1.5)   & $-0.000$ & $-0.010$ & $-0.009$ & $-0.006 \pm 0.006$ \\
 C (Level~1 + 1.5 + 2) & $\mathbf{-0.065}$ & $-0.011$ & $\mathbf{-0.058}$ & $\mathbf{-0.045 \pm 0.030}$ \\
+D (Level~1 + 2) & $-0.001$ & $\mathbf{-0.063}$ & $-0.039$ & $-0.034 \pm 0.031$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -35,7 +36,12 @@ essentially no improvement ($-0.000$), inflating variance.
 Group~C achieves $-0.045 \pm 0.030$, a 5$\times$ improvement over Group~A.
 Two of three Group~C repeats (R1 and R3) show dramatic gains ($-0.065$ and
 $-0.058$); R2 underperformed at $-0.011$.
-\cref{fig:convergence} shows the search trajectories across all nine runs.
+Group~D achieves $-0.034 \pm 0.031$: R2 reached the best single result
+across all D repeats ($-0.063$) while R1 barely improved ($-0.001$), giving
+a mean comparable to, but slightly below, Group~C.
+This confirms that Level~2 is the primary driver of improvement and that
+Level~1.5 is not essential when Level~2 is present.
+\cref{fig:convergence} shows the search trajectories across all twelve runs.
 
 \begin{figure}[!htbp]
   \centering
@@ -125,6 +131,19 @@ The decisive event in Group~C's R1 and R3 is the discovery of
 \texttt{TOTAL\_BATCH\_SIZE} \emph{reduction} (from $2^{19}$ to $2^{17}$ or
 $2^{18}$), which produces improvements of $-0.039$ to $-0.065$---roughly
 5--8$\times$ larger than any single change found by Groups~A or~B.
+
+\paragraph{Group~D: Level~2 without outer loop guidance.}
+Group~D's pattern is similar to Group~C: R2 and R3 independently discover
+\texttt{TOTAL\_BATCH\_SIZE} reduction (D2 reaches $2^{17}$, D3 reaches $2^{18}$),
+producing improvements of $-0.063$ and $-0.039$.
+However, R1 failed to benefit: its two Level~2 sessions generated mechanisms
+(\texttt{diversity\_enforcer} and \texttt{fixation\_detector}) that failed import
+validation, leaving it to run as bare Level~1 with no mechanism injection; the
+inner loop could not discover the batch size direction on its own.
+The absence of Level~1.5 means there is no focused parameter-freeze guidance
+to steer Level~2's attention, so mechanism quality is more variable across
+repeats---explaining the higher variance ($\pm 0.031$) relative to Group~C's
+repeats where Level~1.5 provides enriched trace context.
 
 \subsection{The \texttt{TOTAL\_BATCH\_SIZE} Discovery}
 

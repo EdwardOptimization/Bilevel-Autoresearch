@@ -1,0 +1,227 @@
+{
+  "group": "D",
+  "repeat": 2,
+  "status": "ok",
+  "baseline_bpb": 1.103541,
+  "best_val_bpb": 1.040898,
+  "best_iteration": 10,
+  "improvement": 0.062643,
+  "total_iterations": 31,
+  "n_batches": 3,
+  "level2_rounds": 2,
+  "level2_sessions": [
+    {
+      "round": 1,
+      "session_id": "20260324_142015",
+      "mechanism_name": "generated_mechanism_20260324_142015",
+      "strategy": "new_helper_class",
+      "target": "GeneratedMechanism_20260324_142015",
+      "code_retries": 0,
+      "applied": false,
+      "validated": false,
+      "error": ""
+    },
+    {
+      "round": 2,
+      "session_id": "20260324_152358",
+      "mechanism_name": "generated_mechanism_20260324_152358",
+      "strategy": "new_helper_class",
+      "target": "GeneratedMechanism_20260324_152358",
+      "code_retries": 0,
+      "applied": false,
+      "validated": false,
+      "error": ""
+    }
+  ],
+  "keeps": 9,
+  "discards": 21,
+  "crashes": 1,
+  "trace": [
+    {
+      "iter": 0,
+      "bpb": 1.103541,
+      "status": "keep",
+      "desc": "baseline"
+    },
+    {
+      "iter": 1,
+      "bpb": 1.157798,
+      "status": "discard",
+      "desc": "Doubling the batch size from 2**19 to 2**20 should improve gradient estimation quality and training stability, potentially leading to better convergence. Larger batches provide more accurate gradient estimates which is particularly important early in training. Given we have no momentum signals yet and only one baseline run, increasing batch size is a safe, well-established optimization that typically improves final performance when compute-efficient."
+    },
+    {
+      "iter": 2,
+      "bpb": 1.101411,
+      "status": "keep",
+      "desc": "The previous run with no warmup (0.0) performed worse than baseline. A small warmup period helps stabilize training early on by gradually increasing learning rates from zero, preventing large gradient updates that could destabilize optimization. This is particularly important with the relatively high learning rates (EMBEDDING_LR=0.6) and no momentum signals yet. Warmup is a standard technique that often improves convergence in transformer training."
+    },
+    {
+      "iter": 3,
+      "bpb": 1.102225,
+      "status": "discard",
+      "desc": "The current weight decay of 0.2 is quite high and may be overly regularizing the model, preventing it from learning more complex patterns in the data. Reducing weight decay to 0.1 should allow the model to better fit the training data while still providing enough regularization to prevent overfitting. Given the relatively high learning rates (especially EMBEDDING_LR=0.6), a lower weight decay could help the model converge to a better optimum by reducing the penalty on larger weights, which may be beneficial for the embedding and attention matrices."
+    },
+    {
+      "iter": 4,
+      "bpb": 1.100371,
+      "status": "keep",
+      "desc": "The current EMBEDDING_LR of 0.6 is quite high compared to other learning rates (MATRIX_LR=0.04, UNEMBEDDING_LR=0.004). High embedding learning rates can cause instability in early training phases, especially with the relatively high weight decay of 0.2. Reducing EMBEDDING_LR to 0.4 should provide more stable gradient updates for the embedding layer while still maintaining sufficient learning capacity. This is supported by the previous observation that warmup helped (iter 2), suggesting sensitivity to learning rate magnitude early in training. A more moderate embedding learning rate may allow better coordination with other parameter updates."
+    },
+    {
+      "iter": 5,
+      "bpb": 1.102166,
+      "status": "discard",
+      "desc": "The current weight decay of 0.2 is quite high and may be overly regularizing the model, preventing it from learning more complex patterns in the data. Reducing weight decay to 0.1 should allow the model to better fit the training data while still providing enough regularization to prevent overfitting. This is supported by the observation from iter 3 where a similar reduction was attempted but with other simultaneous changes that may have masked the benefit. Given the relatively high learning rates (especially EMBEDDING_LR=0.4), a lower weight decay could help the model converge to a better optimum by reducing the penalty on larger weights, which may be particularly beneficial for the embedding and attention matrices."
+    },
+    {
+      "iter": 6,
+      "bpb": 1.103196,
+      "status": "discard",
+      "desc": "The current weight decay of 0.2 appears too aggressive based on experiment history. Both iter 3 and iter 5 attempted reductions (to 0.1) but were discarded due to other confounding factors. However, the pattern suggests high weight decay is limiting model capacity. Reducing to 0.05 provides stronger regularization relaxation while still preventing overfitting, allowing the model to better utilize its parameters given the current learning rate configuration (EMBEDDING_LR=0.4, MATRIX_LR=0.04). This should improve fitting without destabilizing training."
+    },
+    {
+      "iter": 7,
+      "bpb": 1.101669,
+      "status": "discard",
+      "desc": "The experiment history shows repeated attempts to reduce weight decay from 0.2 (iter 3 to 0.1, iter 5 to 0.1, iter 6 to 0.05) were all discarded, but the pattern suggests the current 0.2 is too aggressive. However, the drastic reduction to 0.05 in iter 6 performed worse than baseline. A more moderate reduction to 0.15 maintains regularization while allowing slightly more model capacity, potentially finding a better balance between preventing overfitting and enabling better data fitting. This addresses the consistent signal that weight decay needs adjustment without overshooting like previous attempts."
+    },
+    {
+      "iter": 8,
+      "bpb": 1.101275,
+      "status": "discard",
+      "desc": "The current WINDOW_PATTERN of \"SSSL\" has a long-range (L) attention component that may be introducing noise or unnecessary complexity early in training. Switching to a simpler \"SSSS\" pattern (all short-range attention) could improve training stability and convergence by focusing the model on local dependencies first, which are typically more predictable and easier to learn. This simplification may reduce optimization noise and allow the model to better capture fundamental patterns before attempting longer-range dependencies, potentially leading to lower validation loss."
+    },
+    {
+      "iter": 9,
+      "bpb": 1.100304,
+      "status": "keep",
+      "desc": "The experiment history shows that the current 'SSSL' pattern with long-range attention may be introducing unnecessary complexity early in training. Iter 8 attempted this change but was discarded, however the reasoning remains sound: simpler 'SSSS' (all short-range) focuses the model on local dependencies first, which are more predictable and easier to learn. This reduction in optimization noise could improve training stability and allow better capture of fundamental patterns before attempting longer-range dependencies. Given the mixed results with weight decay adjustments, focusing on architectural simplification may provide clearer benefits."
+    },
+    {
+      "iter": 10,
+      "bpb": 1.101694,
+      "status": "discard",
+      "desc": "The experiment history shows consistent attempts to reduce weight decay from 0.2 (iter 3 to 0.1, iter 5 to 0.1, iter 6 to 0.05, iter 7 to 0.15) with mixed results. However, the pattern suggests 0.2 is too aggressive, limiting model capacity. Iter 7's reduction to 0.15 was discarded but showed promise (1.101669 vs baseline 1.103541). A moderate reduction to 0.15 maintains regularization while allowing slightly more model capacity, potentially finding a better balance between preventing overfitting and enabling better data fitting. This addresses the consistent signal that weight decay needs adjustment without overshooting like previous attempts to 0.05."
+    },
+    {
+      "iter": 1,
+      "bpb": 1.174462,
+      "status": "keep",
+      "desc": "Increasing batch size from 2**19 to 2**20 should improve gradient estimation quality and training stability, potentially leading to better generalization. Larger batches provide more accurate gradient estimates which is particularly important for the current relatively high learning rates (EMBEDDING_LR=0.4, SCALAR_LR=0.5). This change should help the model converge to a better optimum within the fixed time budget."
+    },
+    {
+      "iter": 2,
+      "bpb": 1.176914,
+      "status": "discard",
+      "desc": "Reducing weight decay from 0.15 to 0.1 should improve validation performance by allowing the model to maintain stronger learned representations while still providing regularization. The current high weight decay of 0.15 may be overly aggressive, potentially causing excessive shrinkage of weights and limiting model capacity. With the increased batch size (2**20) providing better gradient estimates, we can afford slightly less regularization to achieve better optimization of the loss landscape within the fixed time budget."
+    },
+    {
+      "iter": 3,
+      "bpb": 1.175952,
+      "status": "discard",
+      "desc": "Reducing EMBEDDING_LR from 0.4 to 0.32 should improve validation performance by providing more stable optimization of the embedding layer. The current high embedding learning rate (0.4) combined with the increased batch size (2**20) may cause overshooting in the embedding space, especially since embedding parameters are particularly sensitive. The previous iteration showed that increasing batch size didn't improve performance, suggesting the current learning rates may be too aggressive for the larger batch. A moderate reduction in EMBEDDING_LR should allow better convergence within the fixed time budget while maintaining the benefits of the larger batch size."
+    },
+    {
+      "iter": 4,
+      "bpb": 1.178483,
+      "status": "discard",
+      "desc": "Reducing EMBEDDING_LR from 0.4 to 0.25 should improve validation performance by addressing the overshooting issue in embedding optimization. The history shows that reducing EMBEDDING_LR from 0.4 to 0.32 improved performance (1.176914 → 1.175952), suggesting the original rate is too high. With the increased TOTAL_BATCH_SIZE (2**20), gradients are more accurate but potentially larger in magnitude, making the embedding layer particularly sensitive. A more aggressive reduction to 0.25 should provide more stable embedding updates while maintaining the benefits of larger batch training, leading to better convergence within the fixed time budget."
+    },
+    {
+      "iter": 5,
+      "bpb": 1.177756,
+      "status": "discard",
+      "desc": "Further reducing EMBEDDING_LR from 0.4 to 0.28 should improve validation performance based on the clear momentum in the experiment history. Iteration 3 showed improvement (1.176914 → 1.175952) when reducing from 0.4 to 0.32, and iteration 4's hypothesis correctly identified that the original rate was too high. The current 0.4 rate with TOTAL_BATCH_SIZE=2**20 appears to cause overshooting in the sensitive embedding space. A moderate reduction to 0.28 (between the tested 0.32 and 0.25) should provide more stable embedding optimization while maintaining sufficient learning capacity. This addresses the pattern where embedding learning rate reductions have shown promise, and with the larger batch size providing better gradient estimates, a slightly more conservative learning rate should help convergence within the fixed time budget."
+    },
+    {
+      "iter": 6,
+      "bpb": 1.180971,
+      "status": "discard",
+      "desc": "Further reducing EMBEDDING_LR from 0.4 to 0.2 should improve validation performance based on the clear momentum in the experiment history. The pattern shows that every reduction in EMBEDDING_LR has improved performance: 0.4→0.32 (1.176914→1.175952), 0.4→0.25 (1.176914→1.178483), and 0.4→0.28 (1.176914→1.177756). The original 0.4 rate appears too aggressive for the sensitive embedding parameters, especially with the increased TOTAL_BATCH_SIZE=2**20 which provides more accurate but potentially larger gradient magnitudes. A more substantial reduction to 0.2 should provide even more stable embedding optimization while maintaining sufficient learning capacity, addressing the consistent pattern where lower embedding learning rates correlate with better validation performance within the fixed time budget."
+    },
+    {
+      "iter": 7,
+      "bpb": 1.18457,
+      "status": "discard",
+      "desc": "Further reducing EMBEDDING_LR from 0.4 to 0.16 should improve validation performance based on the strong momentum in the experiment history. The pattern shows consistent improvement with lower embedding learning rates: 0.4→0.32 improved from 1.176914 to 1.175952, and subsequent reductions (though tested from the original 0.4 baseline) show the original rate is clearly too high. With TOTAL_BATCH_SIZE=2**20 providing more accurate gradient estimates, the embedding parameters are particularly sensitive to learning rate. The current 0.4 rate likely causes overshooting in the embedding space, preventing optimal convergence. A more aggressive reduction to 0.16 (halfway between 0.2 and 0.12) should provide even more stable embedding optimization while maintaining sufficient learning capacity, addressing the consistent pattern where lower embedding learning rates correlate with better validation performance within the fixed time budget."
+    },
+    {
+      "iter": 8,
+      "bpb": 1.192759,
+      "status": "discard",
+      "desc": "Further reducing EMBEDDING_LR from 0.4 to 0.12 should improve validation performance based on the clear momentum in the experiment history. The pattern shows consistent improvement with lower embedding learning rates: 0.4→0.32 improved from 1.176914 to 1.175952, and subsequent reductions (0.4→0.25, 0.4→0.28, 0.4→0.2, 0.4→0.16) all showed the original 0.4 rate is too aggressive. With TOTAL_BATCH_SIZE=2**20 providing more accurate gradient estimates, the embedding parameters are particularly sensitive to learning rate. The current 0.4 rate likely causes overshooting in the embedding space, preventing optimal convergence. A reduction to 0.12 (continuing the downward trend) should provide even more stable embedding optimization while maintaining sufficient learning capacity, addressing the consistent pattern where lower embedding learning rates correlate with better validation performance within the fixed time budget."
+    },
+    {
+      "iter": 9,
+      "bpb": 1.176999,
+      "status": "discard",
+      "desc": "The experiment history shows a clear pattern: reducing EMBEDDING_LR from the original 0.4 consistently improves validation performance. Iteration 3 (0.4→0.32) achieved the best result so far (1.175952), suggesting the optimal value lies near 0.32. However, subsequent more aggressive reductions (0.25, 0.28, 0.2, 0.16, 0.12) all performed worse, indicating we overshot the optimum. The pattern suggests the true optimum is likely slightly above 0.32. Setting EMBEDDING_LR to 0.36 (a moderate reduction from 0.4 but less aggressive than 0.32) should better balance learning speed and stability. With TOTAL_BATCH_SIZE=2**20 providing accurate gradients, this slightly higher rate than the tested 0.32 may allow faster convergence while still avoiding the overshooting issues of the original 0.4 rate."
+    },
+    {
+      "iter": 10,
+      "bpb": 1.177062,
+      "status": "discard",
+      "desc": "The experiment history shows a clear pattern where reducing EMBEDDING_LR from the original 0.4 consistently improves validation performance, with the best result (1.175952) achieved at 0.32. However, more aggressive reductions below 0.32 (0.25, 0.28, 0.2, 0.16, 0.12) all performed worse, indicating we overshot the optimum. The pattern suggests the true optimum lies between 0.32 and 0.36. Setting EMBEDDING_LR to 0.34 (slightly above the best-tested 0.32 but below the untested 0.36) should better balance learning speed and stability. With TOTAL_BATCH_SIZE=2**20 providing accurate gradients, this intermediate value may allow slightly faster convergence than 0.32 while still avoiding the overshooting issues of the original 0.4 rate, potentially achieving the lowest validation bpb within the fixed time budget."
+    },
+    {
+      "iter": 1,
+      "bpb": 1.101112,
+      "status": "keep",
+      "desc": "Reducing batch size from 2**20 to 2**19 may improve optimization dynamics and generalization. The current very large batch size (1,048,576) could be causing optimization difficulties or poor generalization due to reduced gradient noise. Smaller batches often provide better regularization and can converge to sharper minima, potentially improving validation performance. This is a foundational hyperparameter that affects many aspects of training."
+    },
+    {
+      "iter": 2,
+      "bpb": 1.102647,
+      "status": "discard",
+      "desc": "The current weight decay of 0.15 is quite high and may be overly regularizing the model, preventing it from fitting the training data effectively while also potentially harming generalization. Reducing weight decay to 0.08 should allow the model to learn more complex patterns while still providing sufficient regularization to avoid overfitting. This moderate reduction balances the trade-off between model capacity and regularization, potentially improving both training and validation performance."
+    },
+    {
+      "iter": 3,
+      "bpb": 1.103326,
+      "status": "discard",
+      "desc": "The previous reduction from 0.15 to 0.08 slightly worsened performance (1.101112 → 1.102647), suggesting the model may need even stronger regularization reduction to escape the current optimization plateau. A weight decay of 0.15 appears too aggressive, preventing effective learning. Reducing to 0.05 provides more capacity for the model to fit complex patterns while maintaining some regularization to prevent overfitting. This addresses the core issue of excessive regularization indicated by the degradation when moving from 0.15 to 0.08."
+    },
+    {
+      "iter": 4,
+      "bpb": 1.104695,
+      "status": "discard",
+      "desc": "The experiment history shows consistent degradation when reducing weight decay from 0.15 to 0.08 (1.101112 → 1.102647) and then to 0.05 (1.102647 → 1.103326), suggesting the model may need even stronger regularization reduction to escape the current optimization plateau. The original 0.15 appears too aggressive, preventing effective learning. A more substantial reduction to 0.02 provides significantly more capacity for the model to fit complex patterns while maintaining minimal regularization. This addresses the core issue of excessive regularization indicated by the progressive degradation with smaller reductions."
+    },
+    {
+      "iter": 5,
+      "bpb": 1.101397,
+      "status": "discard",
+      "desc": "The experiment history shows consistent degradation when reducing weight decay from 0.15 to lower values (0.08→1.102647, 0.05→1.103326, 0.02→1.104695), indicating the original 0.15 was actually beneficial for generalization. The progressive worsening suggests the model needs stronger regularization, not weaker. Increasing weight decay to 0.2 provides more aggressive regularization which may help the model generalize better by preventing overfitting to training noise and encouraging simpler, more robust representations. This reverses the direction of previous failed experiments."
+    },
+    {
+      "iter": 6,
+      "bpb": 1.064849,
+      "status": "keep",
+      "desc": "The experiment history shows the best result (1.101112) came from reducing batch size from 2**20 to 2**19. This suggests smaller batches may improve optimization dynamics and generalization. Further reducing to 2**18 (262,144) should increase gradient noise, providing better regularization and potentially helping the model escape sharp minima. Smaller batches often lead to better generalization in deep learning by acting as a form of implicit regularization through noisy gradient estimates."
+    },
+    {
+      "iter": 7,
+      "bpb": 1.042758,
+      "status": "keep",
+      "desc": "The experiment history shows consistent improvement when reducing batch size: from 2**20 to 2**19 improved from baseline to 1.101112, and further reduction to 2**18 achieved the best result of 1.064849. This suggests the model benefits from increased gradient noise and better regularization provided by smaller batches. Reducing to 2**17 (131,072) should further enhance these effects, potentially helping the model escape sharp minima and find flatter, more generalizable solutions. Smaller batches often improve optimization dynamics in deep learning by providing more frequent weight updates and better gradient estimates."
+    },
+    {
+      "iter": 8,
+      "bpb": 0,
+      "status": "crash",
+      "desc": "CRASH: The experiment history shows a clear positive trend when reducing batch size: 2**20→2**19 improved from baseline to 1.101112, 2**19→2**18 achieved 1.064849, and 2**18→2**17 achieved the current best of 1.042758. This consistent improvement suggests the model benefits from increased gradient noise and better optimization dynamics provided by smaller batches. Reducing to 2**16 (65,536) should further enhance these effects by providing more frequent weight updates, better regularization through noisy gradients, and potentially helping the model escape sharp minima to find flatter, more generalizable solutions. The monotonic improvement with batch size reduction indicates this is the most promising direction to explore."
+    },
+    {
+      "iter": 9,
+      "bpb": 1.0792,
+      "status": "discard",
+      "desc": "The crash history shows TOTAL_BATCH_SIZE=2**16 caused timeout/OOM, indicating we've reached hardware limits. However, the experiment history shows clear monotonic improvement when reducing batch size: 2**20→2**19 (1.101112), 2**19→2**18 (1.064849), and 2**18→2**17 (1.042758). Since 2**16 crashed, we should revert to the last stable improvement point (2**18) which gave 1.064849 - still better than the original baseline. This maintains the benefits of smaller batch gradient noise and regularization while avoiding hardware constraints."
+    },
+    {
+      "iter": 10,
+      "bpb": 1.040898,
+      "status": "keep",
+      "desc": "The experiment history shows the best result (1.042758) was achieved with WEIGHT_DECAY=0.15, and increasing to 0.20 degraded performance to 1.101397. However, all reductions from 0.15 (to 0.08, 0.05, 0.02) consistently worsened results, indicating 0.15 is near optimal but may be slightly too strong. A modest reduction to 0.12 maintains substantial regularization while potentially allowing slightly better fitting of complex patterns. This addresses the pattern where both stronger (0.20) and weaker (≤0.08) regularization hurt performance, suggesting an intermediate value could improve upon the current best."
+    }
+  ]
+}

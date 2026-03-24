@@ -53,9 +53,9 @@ Crucially, all three levels use the same LLM (DeepSeek \texttt{deepseek-chat}).
 Any improvement in search effectiveness therefore comes from the bilevel
 \emph{architecture}, not from access to a more capable model.
 
-We evaluate three experimental groups on Karpathy's GPT pretraining benchmark:
-Group~A (Level~1 only), Group~B (Levels~1 and~1.5), and Group~C (all three
-levels).
+We evaluate four experimental groups on Karpathy's GPT pretraining benchmark:
+Group~A (Level~1 only), Group~B (Levels~1 and~1.5), Group~C (all three
+levels), and Group~D (Levels~1 and~2, without Level~1.5).
 The primary metric is \valbpb{} improvement within a 30-iteration budget using a
 300-second training window per iteration, matching the original benchmark
 specification.

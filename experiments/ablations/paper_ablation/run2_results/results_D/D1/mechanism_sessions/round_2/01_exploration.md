@@ -1,0 +1,38 @@
+Based on the trace, the optimizer is stuck in a local pattern of repeatedly adjusting `EMBEDDING_LR` with diminishing returns, failing to explore other impactful hyperparameters (e.g., other LRs, scheduler, dropout, weight decay) or make coordinated multi-parameter moves. The existing mechanisms (elite pool, crossover, exploration budget) aren't breaking this cycle effectively. Here are 3 targeted improvements.
+
+### Hypothesis 1: Gradient-Informed Proposal via Parameter Sensitivity Estimation
+1.  **Domain**: Optimization Theory / Hyperparameter Gradient Estimation.
+2.  **Core idea**: Estimate the local gradient (sensitivity) of the validation loss with respect to each tunable hyperparameter using recent trial data, and explicitly prompt the LLM to adjust the most sensitive parameters by a magnitude proportional to this estimated gradient.
+3.  **Implementation target**: Modify `SearchConfig` and the proposal prompt generation logic (likely in `_build_proposal_prompt` or a similar method). Add a new method `_estimate_parameter_sensitivities` that analyzes the elite pool and recent trials.
+4.  **Why it addresses the bottleneck**: The trace shows the LLM correctly identified `EMBEDDING_LR` as sensitive but then engaged in inefficient 1D line search. By numerically estimating that, for example, `d(loss)/d(EMBEDDING_LR)` is large and negative near 0.7 but flattens out near 0.35, the system can guide the LLM to stop tweaking it and instead point it to the *next most sensitive* parameter (e.g., `UNEMBEDDING_LR`, which saw a successful change in iter 10). This replaces pattern-based momentum tracking with a more formal, quantitative guide for exploration priority.
+5.  **Implementation complexity**: 3 (Requires adding sensitivity calculation logic, storing trial data in a structured way, and integrating a new data type into the prompt).
+6.  **Risk of regressions**: Medium (Sensitivity estimates from sparse, noisy data can be misleading; requires careful handling to avoid steering the search wildly astray).
+
+### Hypothesis 2: Structured Exploration via Hyperparameter Subspace Rotation
+1.  **Domain**: Evolutionary Algorithms / Cooperative Coevolution.
+2.  **Core idea**: Instead of exploring all parameters every iteration, group them into semantically related subspaces (e.g., "Learning Rates", "Regularization", "Schedule") and cycle focus through these groups on a schedule, forcing comprehensive exploration.
+3.  **Implementation target**: Add a `SubspaceScheduler` class. Modify the `_propose` method to condition the proposal prompt on the current active subspace (e.g., "In this iteration, you MUST propose a change to at least one parameter in the [Regularization] group: DROPOUT, WEIGHT_DECAY.").
+4.  **Why it addresses the bottleneck**: The bottleneck is the LLM's myopic focus on one parameter (`EMBEDDING_LR`). This mechanism forcibly redirects its attention on a deterministic schedule. When the "Learning Rate" subspace is active, it can optimize `EMBEDDING_LR`; on the next cycle, it *must* consider `DROPOUT`, breaking the fixation. This ensures all aspects of the configuration receive directed search effort, preventing stagnation in one dimension.
+5.  **Implementation complexity**: 2 (Requires defining parameter groups and adding a simple cycling state to the search context).
+6.  **Risk of regressions**: Low (It's a soft constraint; the LLM can still adjust other parameters, but the primary change must be in the target group. This structures exploration without breaking existing logic).
+
+### Hypothesis 3: Meta-Learning of Proposal Success with a Lightweight Predictor
+1.  **Domain**: Reinforcement Learning / Meta-Learning.
+2.  **Core idea**: Train a simple, incremental online model (e.g., a multi-armed bandit or linear model) that predicts the success probability of a *type* of proposal (e.g., "Halve LR_A", "Double Batch Size", "Change DROPOUT by +0.1") based on context, and use it to bias the LLM's candidate generation or selection.
+3.  **Implementation target**: Create a `ProposalSuccessPredictor` class. Integrate it into the multi-candidate selection step (where the LLM picks 1 of 3) or use its output to re-rank/weight candidates before the final pick.
+4.  **Why it addresses the bottleneck**: The LLM generates poor proposals because its reasoning is stateless between iterations. This adds a learned, adaptive bias. If "Halve EMBEDDING_LR" has led to discards 8 times in a row, its predicted success score plummets, making the system less likely to choose that action type. Conversely, successful action types (like "Double UNEMBEDDING_LR" from iter 10) get a boost, encouraging exploitation of promising directions. It learns from the *meta-pattern* of actions, not just parameter values.
+5.  **Implementation complexity**: 4 (Requires designing a feature representation for proposal "types", implementing an online learning model, and carefully integrating its predictions into the decision flow without adding significant overhead).
+6.  **Risk of regressions**: Medium-High (The predictor can converge to wrong biases if initial data is noisy; requires careful calibration of exploration vs. exploitation in the meta-layer itself).
+
+### Hypothesis 4 (Bonus): Automated Response Surface Modeling with Trust Regions
+1.  **Domain**: Bayesian Optimization / Derivative-Free Trust Region Methods.
+2.  **Core idea**: Fit a local quadratic model of the loss surface around the best point using trials in the elite pool. Use this model to propose the *predicted best* point within a small, adaptively-sized "trust region," offering it as a mandatory candidate.
+3.  **Implementation target**: Create a `TrustRegionModel` class. Integrate it with the elite pool. Have it generate one guaranteed candidate per iteration (replacing or supplementing the crossover candidate) that is the optimum of its local model within the current trust region.
+4.  **Why it addresses the bottleneck**: It directly addresses the inefficient 1D search by modeling interactions between parameters. If the loss surface near the optimum is curved, the model can suggest coordinated multi-parameter adjustments (e.g., slightly increase `LR_A` while decreasing `LR_B`) that an LLM reasoning linearly might never propose. The adaptive trust region prevents overly aggressive jumps from an unreliable model.
+5.  **Implementation complexity**: 4-5 (Requires implementing model fitting, solving a constrained optimization for the proposal, and managing trust region radius based on model accuracy).
+6.  **Risk of regressions**: High (Model fitting on sparse, high-dimensional data is notoriously tricky; a bad model can derail the search. Adds significant complexity).
+
+**Recommended Implementation Order**:
+1.  **Start with Hypothesis 2 (Subspace Rotation)**. It's low-risk, directly breaks the observed fixation pattern, and is easy to implement and understand.
+2.  **Then implement Hypothesis 1 (Sensitivity Estimation)**. It provides a more nuanced, data-driven guide than subspace rotation alone and synergizes well with it (e.g., within an active subspace, use sensitivity to choose which parameter to tweak).
+3.  **Consider Hypothesis 3 (Meta-Learning Predictor)** if discards remain high, as it adds a longer-term adaptive memory. Hypothesis 4 is the most powerful but also the most complex and risky; it's a major architectural shift best considered if simpler methods fail.

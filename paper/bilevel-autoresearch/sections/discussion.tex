@@ -34,6 +34,15 @@ Code generation succeeded on the first attempt in all six sessions (zero
 retries).
 Five of six mechanisms passed import validation and were activated.
 
+\textbf{H4 (Group~D $\approx$ Group~C: Level~1.5 is not essential when Level~2 is present): Supported with caveats.}
+Group~D's mean ($-0.034 \pm 0.031$) is lower than Group~C's ($-0.045 \pm 0.030$),
+but the difference is within the variance of both groups given $n=3$.
+Level~2 alone is sufficient to produce large improvements in two of three
+repeats; Level~1.5 does not appear to be a necessary condition.
+The caveat is that D's R1 produced essentially no improvement, whereas
+Group~C had no zero-improvement repeat, suggesting Level~1.5 may provide
+modest robustness by enriching the search trace that Level~2 reads.
+
 \subsection{Why Level~1.5 Alone Is Insufficient}
 
 Level~1.5 can diagnose search problems---it correctly identifies when a
@@ -48,6 +57,15 @@ Only Level~2 can produce such code changes.
 This structural ceiling explains why H1 is not supported: parameter
 redirection alone is insufficient to escape the LLM's deterministic
 proposal patterns.
+
+Conversely, Group~D shows that Level~1.5 is not essential when Level~2 is
+present.
+Group~D achieves comparable improvements to Group~C without any parameter
+freezing or strategy injection.
+Level~1.5 may provide modest value through trace enrichment---Group~C's mean
+($-0.045$) is slightly higher than Group~D's ($-0.034$)---but the dominant
+factor is Level~2's mechanism generation, which can independently direct
+search toward the \texttt{TOTAL\_BATCH\_SIZE} reduction direction.
 
 \subsection{Why Group~C's R2 Underperformed}
 

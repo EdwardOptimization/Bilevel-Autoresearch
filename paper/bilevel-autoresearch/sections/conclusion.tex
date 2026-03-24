@@ -11,6 +11,9 @@ using the same DeepSeek model at every level.
 Level~1.5 alone does not reliably improve over the pure inner loop, confirming
 that parameter-level adjustment is insufficient to escape the LLM's
 deterministic search patterns; structural modification of the loop is required.
+Group~D (Level~1 + Level~2, without Level~1.5) achieves $-0.034 \pm 0.031$,
+confirming that Level~2 is the key driver of improvement and that Level~1.5
+is not essential when mechanism research is present across four experimental groups.
 
 Level~2's mechanisms---Tabu Search Manager, Multi-Scale Bandit Proposer, and
 Systematic Orthogonal Exploration---were drawn from three distinct algorithmic

@@ -174,7 +174,7 @@ approximately solves the lower problem by LLM-guided hill climbing.
 
 \subsection{Experimental Design}
 
-Three groups isolate the contribution of each level (\cref{tab:groups}).
+Four groups isolate the contribution of each level (\cref{tab:groups}).
 All variables are held constant across groups: LLM model, GPU hardware
 (RTX~5090 32\,GB, three independent servers), 300-second training budget,
 30-iteration search budget, and baseline \texttt{train.py}.
@@ -194,6 +194,7 @@ Group & Levels Active & Description \\
 A & Level~1 only & Pure autoresearch, no outer intervention \\
 B & Level~1 + 1.5 & Inner loop plus outer strategy adjustment \\
 C & Level~1 + 1.5 + 2 & Full bilevel with mechanism research \\
+D & Level~1 + 2 & Inner loop plus mechanism research, no strategy adjustment \\
 \bottomrule
 \end{tabular}
 \end{table}
