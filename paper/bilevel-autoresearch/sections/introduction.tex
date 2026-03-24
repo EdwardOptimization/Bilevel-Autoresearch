@@ -30,44 +30,29 @@ bottlenecks, generate new Python code to address them, and inject that
 code at runtime---all without human involvement?
 
 We answer this question affirmatively (\cref{fig:concept}).
-We present \textbf{\methodname{}}, a bilevel framework with three operational
-levels:
+We present \textbf{\methodname{}}, a bilevel framework with two
+nested loops:
+the \emph{inner loop} optimizes the task (proposing hyperparameter changes,
+training, evaluating, keeping or discarding);
+the \emph{outer loop} optimizes how the inner loop searches, by reading its
+code, identifying bottlenecks, generating new Python mechanisms, and injecting
+them at runtime.
+Both loops use the same LLM---any improvement comes from the bilevel
+\emph{architecture}, not from a more capable model.
 
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.85\columnwidth]{bilevel_concept.pdf}
-  \caption{Bilevel autoresearch: the outer loop optimizes the inner loop's search mechanism by generating and injecting new Python code at runtime.}
+  \caption{Bilevel autoresearch: the inner loop optimizes the task output;
+  the outer loop optimizes the inner loop's search mechanism by generating
+  and injecting new Python code at runtime.}
   \label{fig:concept}
 \end{figure}
-\begin{itemize}
-  \item \textbf{Level~1} (inner loop) runs the standard autoresearch cycle: an
-        LLM proposes a configuration change, the model trains for a fixed budget,
-        validation loss (\valbpb{}) is measured, and the change is kept or
-        discarded.
-  \item \textbf{Level~1.5} (outer loop) executes every five inner iterations.
-        It analyzes the accumulated search trace, freezes parameters that have
-        failed repeatedly, unfreezes under-explored parameters, and injects
-        strategic guidance text into the next inner cycle.
-  \item \textbf{Level~2} (mechanism research) executes every two outer cycles.
-        It conducts a structured 4-round research session---Explore, Critique,
-        Specify, Generate---producing Python code that implements a novel search
-        mechanism.
-        The code is patched into the inner loop's runner module via
-        \texttt{importlib} dynamic loading and validated before activation.
-\end{itemize}
 
-Crucially, all three levels use the same LLM (DeepSeek \texttt{deepseek-chat}).
-Any improvement in search effectiveness therefore comes from the bilevel
-\emph{architecture}, not from access to a more capable model.
-
-We evaluate four experimental groups on Karpathy's GPT pretraining benchmark:
-Group~A (Level~1 only), Group~B (Levels~1 and~1.5), Group~C (all three
-levels), and Group~D (Levels~1 and~2, without Level~1.5).
-The primary metric is \valbpb{} improvement within a 30-iteration budget using a
-300-second training window per iteration, matching the original benchmark
-specification.
-All groups start from the same baseline configuration and use identical GPU
-hardware (RTX~5090).
+We evaluate the framework on Karpathy's GPT pretraining benchmark
+(\valbpb{}, 300-second training budget, RTX~5090) with a controlled
+four-group ablation that isolates the contribution of each component
+(details in \cref{sec:methods}).
 
 \paragraph{Contributions.}
 \begin{enumerate}
