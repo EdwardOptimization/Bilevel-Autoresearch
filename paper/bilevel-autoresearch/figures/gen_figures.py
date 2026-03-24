@@ -9,6 +9,111 @@ import os
 FIGURES_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Figure 0: Bilevel Concept Diagram
+# ─────────────────────────────────────────────────────────────────────────────
+
+def make_bilevel_concept_figure():
+    fig, ax = plt.subplots(figsize=(5.0, 3.0))
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 6)
+    ax.axis('off')
+
+    # Color palette
+    outer_face  = '#edf7ed'
+    outer_edge  = '#2d6a2d'
+    inner_face  = '#dce8f7'
+    inner_edge  = '#2c5f8a'
+    arrow_col   = '#444444'
+    inject_col  = '#8b2d8a'   # purple for the injection arrow label
+
+    # ── Outer rounded rectangle (green) ──────────────────────────────────────
+    outer_box = FancyBboxPatch(
+        (0.25, 0.25), 9.5, 5.5,
+        boxstyle="round,pad=0.15",
+        facecolor=outer_face, edgecolor=outer_edge, linewidth=2.0, zorder=1)
+    ax.add_patch(outer_box)
+
+    # Outer loop title (top)
+    ax.text(5.0, 5.55, 'Outer Loop — optimize search mechanism',
+            ha='center', va='center', fontsize=9.5, fontweight='bold',
+            color=outer_edge, zorder=5)
+
+    # Outer loop action text (bottom)
+    ax.text(5.0, 0.72,
+            'analyze trace  \u2192  research mechanism  \u2192  generate code  \u2192  inject',
+            ha='center', va='center', fontsize=8.0, color=outer_edge,
+            style='italic', zorder=5)
+
+    # ── Inner rounded rectangle (blue) ───────────────────────────────────────
+    inner_box = FancyBboxPatch(
+        (1.0, 1.45), 8.0, 3.6,
+        boxstyle="round,pad=0.12",
+        facecolor=inner_face, edgecolor=inner_edge, linewidth=1.6, zorder=2)
+    ax.add_patch(inner_box)
+
+    # Inner loop title
+    ax.text(5.0, 4.72, 'Inner Loop — optimize task output',
+            ha='center', va='center', fontsize=9.0, fontweight='bold',
+            color=inner_edge, zorder=5)
+
+    # Inner loop content: propose -> train -> evaluate -> keep/discard
+    # Draw four small boxes in a row
+    steps = [
+        (2.15,  3.30, 'propose'),
+        (4.00,  3.30, 'train'),
+        (5.85,  3.30, 'evaluate'),
+        (7.70,  3.30, 'keep /\ndiscard'),
+    ]
+    bw, bh = 1.40, 0.62
+    for (x, y, lbl) in steps:
+        b = FancyBboxPatch(
+            (x - bw/2, y - bh/2), bw, bh,
+            boxstyle="round,pad=0.05",
+            facecolor='white', edgecolor=inner_edge, linewidth=1.2, zorder=4)
+        ax.add_patch(b)
+        ax.text(x, y, lbl, ha='center', va='center', fontsize=8.0,
+                color='#1a1a2e', zorder=5, multialignment='center')
+
+    # Arrows between inner-loop steps
+    for i in range(len(steps) - 1):
+        x1 = steps[i][0]  + bw/2
+        x2 = steps[i+1][0] - bw/2
+        y0 = steps[0][1]
+        ax.annotate('', xy=(x2, y0), xytext=(x1, y0),
+                    arrowprops=dict(arrowstyle='->', color=arrow_col, lw=1.2),
+                    zorder=3)
+
+    # Feedback arc: keep/discard -> back to propose (below the row)
+    ax.annotate('', xy=(2.15, steps[0][1] - bh/2),
+                xytext=(7.70, steps[0][1] - bh/2),
+                arrowprops=dict(
+                    arrowstyle='->',
+                    color='#2c8a3a', lw=1.2,
+                    connectionstyle='arc3,rad=0.42'),
+                zorder=3)
+    ax.text(4.92, 2.28, 'update best config',
+            ha='center', va='center', fontsize=7.2,
+            color='#2c8a3a', style='italic', zorder=5)
+
+    # ── Injection arrow: outer -> inner (right side) ─────────────────────────
+    ax.annotate('', xy=(9.0, 2.65), xytext=(9.0, 0.98),
+                arrowprops=dict(
+                    arrowstyle='->', color=inject_col, lw=1.5,
+                    connectionstyle='arc3,rad=0.0'),
+                zorder=6)
+    ax.text(9.55, 1.82, 'new\nmechanism\n(Python\ncode)',
+            ha='center', va='center', fontsize=7.0,
+            color=inject_col, fontweight='bold', zorder=6,
+            multialignment='center')
+
+    plt.tight_layout(pad=0.2)
+    out = os.path.join(FIGURES_DIR, 'bilevel_concept.pdf')
+    fig.savefig(out, bbox_inches='tight', dpi=200)
+    plt.close(fig)
+    print(f'Saved {out}  ({os.path.getsize(out)//1024} KB)')
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Figure 1: Architecture Diagram
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -31,126 +136,129 @@ def draw_arrow(ax, x1, y1, x2, y2, color='#444444', lw=1.4,
                                 connectionstyle=connectionstyle), zorder=2)
 
 def make_architecture_figure():
-    fig, ax = plt.subplots(figsize=(7.5, 9.5))
+    fig, ax = plt.subplots(figsize=(7.0, 5.0))
     ax.set_xlim(0, 10)
-    ax.set_ylim(0, 13)
+    ax.set_ylim(0, 7.5)
     ax.axis('off')
 
-    # colours
-    L2_edge  = '#2d6a2d';  L2_face  = '#edf7ed';  L2_band  = '#c8e6c8'
-    L15_edge = '#9b6a00';  L15_face = '#fff8ec';   L15_band = '#ffe0b0'
-    L1_edge  = '#2c5f8a';  L1_face  = '#dce8f7';   L1_band  = '#b8d8f0'
+    # Colors
+    L2_edge  = '#2d6a2d';  L2_face  = '#edf7ed'
+    L15_edge = '#9b6a00';  L15_face = '#fff8ec'
+    L1_edge  = '#2c5f8a';  L1_face  = '#dce8f7'
     arrow_col = '#444444'
 
-    bw, bh = 2.55, 0.75
-    cx = 5.0
+    bw, bh = 2.0, 0.72
 
-    # background bands
-    for y0, y1, fc, ec, label in [
-        (10.3, 12.85, L2_band,  L2_edge,  'Level 2 — Mechanism Research'),
-        (5.55, 10.0,  L15_band, L15_edge, 'Level 1.5 — Outer Config'),
-        (0.25, 5.25,  L1_band,  L1_edge,  'Level 1 — Inner Loop'),
-    ]:
-        rect = plt.Rectangle((0.35, y0), 9.3, y1 - y0,
-                              facecolor=fc, edgecolor=ec, linewidth=1.2,
-                              alpha=0.32, zorder=0)
-        ax.add_patch(rect)
-        ax.text(0.62, (y0 + y1) / 2, label, fontsize=9, color=ec,
-                fontweight='bold', va='center', rotation=90, zorder=5)
-
-    # ── Level 1 ──────────────────────────────────────────────────────────────
-    L1_y = 2.90
-    xs = [2.1, 4.2, 6.3]
+    # ── Level 1 row — y = 1.25 ───────────────────────────────────────────────
+    L1_y = 1.25
+    L1_xs = [1.5, 3.7, 5.9]
     labels_L1 = ['Propose\nhyperparameters', 'Train\n(mini-run)', 'Evaluate\nval BPB']
-    for x, lbl in zip(xs, labels_L1):
-        draw_box(ax, x, L1_y, bw, bh, lbl, fontsize=9.5,
+    for x, lbl in zip(L1_xs, labels_L1):
+        draw_box(ax, x, L1_y, bw, bh, lbl, fontsize=8.5,
                  facecolor=L1_face, edgecolor=L1_edge)
 
     # keep/discard diamond
-    kx, ky, kr = 8.3, L1_y, 0.52
+    kx, ky, kr = 8.35, L1_y, 0.46
     diamond = plt.Polygon(
-        [(kx, ky + kr), (kx + kr, ky), (kx, ky - kr), (kx - kr, ky)],
-        closed=True, facecolor='#ffffff', edgecolor=L1_edge, linewidth=1.5, zorder=3)
+        [(kx, ky+kr), (kx+kr, ky), (kx, ky-kr), (kx-kr, ky)],
+        closed=True, facecolor='white', edgecolor=L1_edge, linewidth=1.4, zorder=3)
     ax.add_patch(diamond)
     ax.text(kx, ky, 'Keep?\nDiscard?', ha='center', va='center',
-            fontsize=8.5, color='#1a1a2e', zorder=4)
+            fontsize=7.5, color='#1a1a2e', zorder=4)
 
-    # L1 arrows left→right
-    for x1, x2 in [(xs[0]+bw/2, xs[1]-bw/2), (xs[1]+bw/2, xs[2]-bw/2), (xs[2]+bw/2, kx-kr)]:
+    # L1 arrows left->right
+    for x1, x2 in [(L1_xs[0]+bw/2, L1_xs[1]-bw/2),
+                   (L1_xs[1]+bw/2, L1_xs[2]-bw/2),
+                   (L1_xs[2]+bw/2, kx-kr)]:
         draw_arrow(ax, x1, L1_y, x2, L1_y, color=arrow_col)
 
-    # keep → feedback arc back to Propose
-    draw_arrow(ax, kx-kr*0.72, ky-kr*0.72, xs[0], L1_y-bh/2-0.06,
-               color='#2c8a3a', lw=1.4, connectionstyle='arc3,rad=-0.42')
-    ax.text(5.15, L1_y-1.32, 'keep → update best config',
-            ha='center', fontsize=7.8, color='#2c8a3a', style='italic', zorder=5)
+    # Feedback arc below
+    draw_arrow(ax, kx-kr*0.72, ky-kr*0.72, L1_xs[0], L1_y-bh/2-0.05,
+               color='#2c8a3a', lw=1.2, connectionstyle='arc3,rad=-0.38')
+    ax.text(4.9, L1_y-1.0, 'keep \u2192 update best config',
+            ha='center', fontsize=7.2, color='#2c8a3a', style='italic', zorder=5)
 
-    # ── Level 1.5 ────────────────────────────────────────────────────────────
-    L15_y = 8.65
-    L15_xs = [cx-2.2, cx, cx+2.2]
+    # Level 1 dashed border + label
+    rect1 = plt.Rectangle((0.3, 0.22), 9.4, 1.70,
+                           facecolor='none', edgecolor=L1_edge,
+                           linewidth=1.0, alpha=0.55, zorder=0, linestyle='--')
+    ax.add_patch(rect1)
+    ax.text(0.55, 1.07, 'Level 1\nInner Loop', fontsize=7.5, color=L1_edge,
+            fontweight='bold', va='center', ha='center', rotation=90, zorder=5)
+
+    # ── Level 1.5 row — y = 3.55 ─────────────────────────────────────────────
+    L15_y = 3.55
+    L15_xs = [2.2, 5.0, 7.8]
     L15_lbs = ['Analyze\ntrace', 'Freeze / unfreeze\nparameters', 'Inject\nguidance']
     for x, lbl in zip(L15_xs, L15_lbs):
-        draw_box(ax, x, L15_y, bw-0.1, bh, lbl, fontsize=9.5,
+        draw_box(ax, x, L15_y, 2.2, bh, lbl, fontsize=8.5,
                  facecolor=L15_face, edgecolor=L15_edge)
 
-    # L1.5 internal arrows
-    for x1, x2 in [(L15_xs[0]+( bw-0.1)/2, L15_xs[1]-(bw-0.1)/2),
-                   (L15_xs[1]+(bw-0.1)/2, L15_xs[2]-(bw-0.1)/2)]:
+    # L1.5 arrows
+    for x1, x2 in [(L15_xs[0]+1.1, L15_xs[1]-1.1),
+                   (L15_xs[1]+1.1, L15_xs[2]-1.1)]:
         draw_arrow(ax, x1, L15_y, x2, L15_y, color=arrow_col)
 
-    # observe trace (down-left)
-    draw_arrow(ax, L15_xs[0], L15_y-bh/2, cx-0.5, L1_y+bh/2+0.07,
-               color=L15_edge, lw=1.25, connectionstyle='arc3,rad=0.08')
-    ax.text(2.7, 6.9, 'observe\ntrace', ha='center', fontsize=7.8,
+    # Observe trace: down-left from Analyze to L1
+    draw_arrow(ax, L15_xs[0], L15_y-bh/2,
+               L1_xs[1], L1_y+bh/2+0.05,
+               color=L15_edge, lw=1.1, connectionstyle='arc3,rad=0.15')
+    ax.text(3.0, 2.55, 'observe\ntrace', ha='center', fontsize=7.0,
             color=L15_edge, style='italic', zorder=5)
 
-    # inject guidance (down-right)
-    draw_arrow(ax, L15_xs[2], L15_y-bh/2, cx+0.8, L1_y+bh/2+0.07,
-               color=L15_edge, lw=1.25, connectionstyle='arc3,rad=-0.08')
-    ax.text(7.4, 6.9, 'inject\nguidance', ha='center', fontsize=7.8,
+    # Inject guidance: down-right from Inject to L1
+    draw_arrow(ax, L15_xs[2], L15_y-bh/2,
+               L1_xs[2], L1_y+bh/2+0.05,
+               color=L15_edge, lw=1.1, connectionstyle='arc3,rad=-0.15')
+    ax.text(7.35, 2.55, 'inject\nguidance', ha='center', fontsize=7.0,
             color=L15_edge, style='italic', zorder=5)
 
-    # outer cycle arc (top of L1.5)
-    draw_arrow(ax, L15_xs[2]+(bw-0.1)/2, L15_y,
-               L15_xs[0]-(bw-0.1)/2, L15_y,
-               color=L15_edge, lw=1.15, connectionstyle='arc3,rad=-0.52')
-    ax.text(cx, 9.52, 'outer cycle (every ~5 iters)', ha='center',
-            fontsize=7.8, color=L15_edge, style='italic', zorder=5)
+    # Outer cycle arc above L1.5
+    draw_arrow(ax, L15_xs[2]+1.1, L15_y,
+               L15_xs[0]-1.1, L15_y,
+               color=L15_edge, lw=1.0, connectionstyle='arc3,rad=-0.45')
+    ax.text(5.0, 4.42, 'outer cycle (every ~5 iters)', ha='center',
+            fontsize=7.2, color=L15_edge, style='italic', zorder=5)
 
-    # ── Level 2 ──────────────────────────────────────────────────────────────
-    L2_row1_y = 12.05
-    L2_row2_y = 11.05
-    # 4 boxes spaced evenly across x=1.5..8.5
-    L2_bw = 1.9
-    L2_row1 = [(1.5, L2_row1_y, 'Explore'),
-               (3.6, L2_row1_y, 'Critique'),
-               (5.7, L2_row1_y, 'Specify'),
-               (7.8, L2_row1_y, 'Generate\nCode')]
-    for x, y, lbl in L2_row1:
-        draw_box(ax, x, y, L2_bw, bh, lbl, fontsize=9.0,
+    # Level 1.5 dashed border + label
+    rect15 = plt.Rectangle((0.3, 2.98), 9.4, 1.55,
+                            facecolor='none', edgecolor=L15_edge,
+                            linewidth=1.0, alpha=0.55, zorder=0, linestyle='--')
+    ax.add_patch(rect15)
+    ax.text(0.55, 3.75, 'Level 1.5\nOuter\nConfig', fontsize=7.0, color=L15_edge,
+            fontweight='bold', va='center', ha='center', rotation=90, zorder=5)
+
+    # ── Level 2 row — y = 5.65 ───────────────────────────────────────────────
+    L2_y = 5.65
+    L2_xs = [1.5, 3.6, 5.7, 7.8]
+    L2_lbs = ['Explore', 'Critique', 'Specify', 'Generate\nCode']
+    L2_bw = 1.75
+    for x, lbl in zip(L2_xs, L2_lbs):
+        draw_box(ax, x, L2_y, L2_bw, bh, lbl, fontsize=8.5,
                  facecolor=L2_face, edgecolor=L2_edge)
 
-    draw_box(ax, 5.0, L2_row2_y, bw, bh, 'Inject via\nimportlib',
-             fontsize=9.5, facecolor=L2_face, edgecolor=L2_edge)
-
-    # L2 row1 arrows (between 4 boxes)
+    # L2 arrows
     for i in range(3):
-        draw_arrow(ax, L2_row1[i][0]+L2_bw/2, L2_row1_y,
-                   L2_row1[i+1][0]-L2_bw/2, L2_row1_y, color=arrow_col)
+        draw_arrow(ax, L2_xs[i]+L2_bw/2, L2_y,
+                   L2_xs[i+1]-L2_bw/2, L2_y, color=arrow_col)
 
-    # Generate Code → Inject
-    draw_arrow(ax, 7.8, L2_row1_y-bh/2,
-               5.0+bw/2+0.05, L2_row2_y+bh/2+0.02,
-               color=arrow_col, connectionstyle='arc3,rad=0.30')
-
-    # Inject → down into L1
-    draw_arrow(ax, 5.0, L2_row2_y-bh/2, cx, L1_y+bh/2+0.07,
-               color=L2_edge, lw=1.7, connectionstyle='arc3,rad=0.0')
-    ax.text(5.55, 9.98, 'inject new\noperator', ha='left', fontsize=7.8,
+    # Generate Code -> down into L1.5
+    draw_arrow(ax, L2_xs[3], L2_y-bh/2,
+               L15_xs[2], L15_y+bh/2+0.05,
+               color=L2_edge, lw=1.6, connectionstyle='arc3,rad=0.0')
+    ax.text(8.45, 4.62, 'inject new\noperator', ha='center', fontsize=7.0,
             color=L2_edge, style='italic', zorder=5)
 
-    ax.text(cx, 0.07, 'Three-level bilevel architecture',
-            ha='center', fontsize=8.5, color='#555555', style='italic')
+    # Level 2 dashed border + label
+    rect2 = plt.Rectangle((0.3, 5.10), 9.4, 1.30,
+                           facecolor='none', edgecolor=L2_edge,
+                           linewidth=1.0, alpha=0.55, zorder=0, linestyle='--')
+    ax.add_patch(rect2)
+    ax.text(0.55, 5.75, 'Level 2\nMechanism\nResearch', fontsize=7.0, color=L2_edge,
+            fontweight='bold', va='center', ha='center', rotation=90, zorder=5)
+
+    ax.text(5.0, 0.08, 'Three-level bilevel architecture',
+            ha='center', fontsize=8.0, color='#555555', style='italic')
 
     plt.tight_layout(pad=0.3)
     out = os.path.join(FIGURES_DIR, 'architecture.pdf')
@@ -376,6 +484,7 @@ def make_level2_session_figure():
 
 
 if __name__ == '__main__':
+    make_bilevel_concept_figure()
     make_architecture_figure()
     make_convergence_figure()
     make_level2_session_figure()
