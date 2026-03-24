@@ -1,16 +1,19 @@
 """Ablation study script for the EvoResearch paper.
 
-Three experimental groups:
-  A: Level 1 only   — inner loop (simple_mode=True, no outer loop)
-  B: Level 1 + 1.5  — inner loop + outer loop (simple_mode=True, WITH outer cycles)
-  C: Level 1 + 1.5 + Level 2 — same as B but with DeepSeek Level-2 researcher
-                                that modifies runner.py between outer cycle pairs
+Four experimental groups:
+  A: Level 1 only         — inner loop (simple_mode=True, no outer loop)
+  B: Level 1 + 1.5        — inner loop + outer loop (simple_mode=True, WITH outer cycles)
+  C: Level 1 + 1.5 + L2  — same as B but with DeepSeek Level-2 researcher
+                            that modifies runner.py between outer cycle pairs
+  D: Level 1 + Level 2    — inner loop only (NO outer loop) + Level-2 mechanism
+                            research every 10 iterations (3 batches of 10)
 
 Usage:
   cd /home/quyaonan/research_evo_mvp
   python -m experiments.paper_ablation.run_ablation --group A --repeats 3
   python -m experiments.paper_ablation.run_ablation --group B --repeats 3
   python -m experiments.paper_ablation.run_ablation --group C --repeats 3
+  python -m experiments.paper_ablation.run_ablation --group D --repeats 3
   python -m experiments.paper_ablation.run_ablation --group all --repeats 3
 """
 from __future__ import annotations
@@ -595,6 +598,257 @@ def run_group_c(
 
 
 # ---------------------------------------------------------------------------
+# Group D — Level 1 + Level 2 (inner loop only, NO outer loop, L2 every 10 iters)
+# ---------------------------------------------------------------------------
+
+# Number of inner iterations per batch for Group D
+LEVEL2_BATCH_SIZE = 10
+
+def run_group_d(
+    repeat: int,
+    iterations: int,
+    time_budget: int,
+    provider: str,
+    model: str,
+    autoresearch_dir: Path,
+) -> dict:
+    """Run one repeat of Group D: inner loop only + Level-2 mechanism researcher.
+
+    30 iterations split into 3 batches of 10.  After each batch (except the
+    last) Level-2 analyses the trace and patches runner.py.  There is NO
+    TrainOuterLoop — the inner loop runs straight through each batch with
+    simple_mode=True.
+    """
+    run_dir = _build_run_dir("D", repeat)
+    mech_dir = run_dir / "mechanism_sessions"
+    mech_dir.mkdir(parents=True, exist_ok=True)
+    fh = _setup_run_logging(run_dir)
+
+    batch_size = LEVEL2_BATCH_SIZE
+    n_batches = max(1, iterations // batch_size)
+    logger.info(
+        f"=== Group D | Repeat {repeat} | {n_batches} batches × "
+        f"{batch_size} inner iters/batch | Level-2 between batches ==="
+    )
+
+    try:
+        from domains.train_opt.mechanism_research import TrainMechanismResearcher
+
+        train_py = _get_train_py(autoresearch_dir)
+        client = _make_llm_client(provider, model)
+
+        # The canonical runner.py source (never overwritten by Level-2)
+        canonical_runner_py = PROJECT_ROOT / "domains" / "train_opt" / "runner.py"
+
+        # Working copy of runner.py for this run — Level-2 patches THIS copy
+        run_runner_py = run_dir / "runner.py"
+        shutil.copy2(canonical_runner_py, run_runner_py)
+        logger.info(f"[D{repeat}] Copied baseline runner.py to {run_runner_py}")
+
+        # Level-2 researcher (uses the same LLM client as all other levels)
+        researcher = TrainMechanismResearcher(
+            model=client._model,
+            api_key=client._api_key,
+            provider=provider,
+        )
+
+        # Results accumulator
+        all_trace: list[dict] = []
+        baseline_bpb: float | None = None
+        best_bpb_overall: float = float("inf")
+        best_iter_overall: int = 0
+        level2_sessions: list[dict] = []
+        level2_round = 0
+
+        # Global iteration counter so run_iteration numbers stay contiguous
+        global_iter = 0
+
+        for batch_idx in range(1, n_batches + 1):
+            logger.info(
+                f"[D{repeat}] Batch {batch_idx}/{n_batches} "
+                f"(using runner.py from {run_runner_py})"
+            )
+
+            # Dynamically load the (possibly patched) TrainRunner
+            try:
+                runner_module = _load_runner_module(run_runner_py)
+                PatchedTrainRunner = runner_module.TrainRunner
+            except Exception as e:
+                logger.warning(
+                    f"[D{repeat}] Dynamic load failed ({e}), using original TrainRunner"
+                )
+                PatchedTrainRunner = TrainRunner
+
+            config = _make_search_config(batch_size, time_budget)
+
+            runner = PatchedTrainRunner(
+                train_py=train_py,
+                work_dir=autoresearch_dir,
+                llm_client=client,
+                search_config=config,
+                artifacts_dir=run_dir / "artifacts" / f"batch_{batch_idx}",
+                simple_mode=True,
+            )
+
+            # Baseline only on the first batch
+            if batch_idx == 1:
+                baseline_result = runner.run_baseline()
+                baseline_bpb = baseline_result.val_bpb
+                logger.info(f"[D{repeat}] Baseline: {baseline_bpb:.6f}")
+
+            # Run inner iterations for this batch (NO outer loop)
+            for i in range(1, batch_size + 1):
+                global_iter += 1
+                result = runner.run_iteration(i)
+                logger.info(
+                    f"[D{repeat}] Iter {global_iter:3d}/{iterations}: "
+                    f"bpb={result.val_bpb:.6f} [{result.status}] "
+                    f"{result.description[:55]}"
+                )
+
+            # Accumulate trace
+            batch_best = runner.trace.best_bpb
+            if batch_best < best_bpb_overall:
+                best_bpb_overall = batch_best
+                best_iter_overall = runner.trace.best_iteration
+            all_trace.extend(
+                {
+                    "iter": r.iteration,
+                    "bpb": r.val_bpb,
+                    "status": r.status,
+                    "desc": r.description,
+                }
+                for r in runner.trace.results
+            )
+
+            # Snapshot runner.py after each batch
+            snapshot_path = run_dir / f"runner_after_batch_{batch_idx}.py"
+            shutil.copy2(run_runner_py, snapshot_path)
+
+            # --- Level-2 intervention (not after the last batch) ---
+            if batch_idx < n_batches:
+                level2_round += 1
+                logger.info(
+                    f"[D{repeat}] Level-2 Round {level2_round} — "
+                    f"analyzing trace and patching runner.py..."
+                )
+
+                trace_text = runner.trace.summary(last_n=batch_size + 5)
+                runner_code = run_runner_py.read_text(encoding="utf-8")
+
+                session_subdir = mech_dir / f"round_{level2_round}"
+                session_subdir.mkdir(parents=True, exist_ok=True)
+
+                try:
+                    result = researcher.research(
+                        trace_summary=trace_text,
+                        runner_code=runner_code,
+                        session_dir=session_subdir,
+                        bottleneck="",  # auto-inferred from trace
+                    )
+
+                    applied = researcher.apply(run_runner_py, result)
+                    if applied:
+                        valid = researcher.validate(run_runner_py)
+                        if not valid:
+                            logger.warning(
+                                f"[D{repeat}] Level-2 Round {level2_round}: "
+                                f"patched runner.py fails import check — reverting"
+                            )
+                            backup = run_runner_py.with_suffix(
+                                f".py.bak_{result.session_id}"
+                            )
+                            if backup.exists():
+                                shutil.copy2(backup, run_runner_py)
+                                logger.info(f"[D{repeat}] Restored from {backup}")
+                            applied = False
+
+                    level2_sessions.append({
+                        "round": level2_round,
+                        "session_id": result.session_id,
+                        "mechanism_name": result.mechanism_name,
+                        "strategy": result.implementation_strategy,
+                        "target": result.target,
+                        "code_retries": result.code_retries,
+                        "applied": applied,
+                        "validated": result.validated,
+                        "error": result.validation_error,
+                    })
+
+                    if applied:
+                        logger.info(
+                            f"[D{repeat}] Level-2 Round {level2_round}: "
+                            f"patched runner.py with '{result.mechanism_name}'"
+                        )
+                    else:
+                        logger.warning(
+                            f"[D{repeat}] Level-2 Round {level2_round}: "
+                            f"patch NOT applied — continuing with unchanged runner.py"
+                        )
+
+                except Exception as exc:
+                    err_text = tb.format_exc()
+                    logger.error(
+                        f"[D{repeat}] Level-2 Round {level2_round} FAILED:\n{err_text}"
+                    )
+                    level2_sessions.append({
+                        "round": level2_round,
+                        "status": "error",
+                        "error": str(exc),
+                        "applied": False,
+                    })
+
+        # Snapshot final runner.py for the run
+        snapshot_dest = run_dir / "runner_final.py"
+        if run_runner_py.resolve() != snapshot_dest.resolve():
+            shutil.copy2(run_runner_py, snapshot_dest)
+
+        improvement = (baseline_bpb - best_bpb_overall) if baseline_bpb is not None else 0.0
+        keeps = sum(1 for r in all_trace if r["status"] == "keep")
+        discards = sum(1 for r in all_trace if r["status"] == "discard")
+        crashes = sum(1 for r in all_trace if r["status"] == "crash")
+
+        report = {
+            "group": "D",
+            "repeat": repeat,
+            "status": "ok",
+            "baseline_bpb": baseline_bpb,
+            "best_val_bpb": best_bpb_overall,
+            "best_iteration": best_iter_overall,
+            "improvement": improvement,
+            "total_iterations": len(all_trace),
+            "n_batches": n_batches,
+            "level2_rounds": level2_round,
+            "level2_sessions": level2_sessions,
+            "keeps": keeps,
+            "discards": discards,
+            "crashes": crashes,
+            "trace": all_trace,
+        }
+        _save_report(run_dir, report)
+
+        logger.info(
+            f"[D{repeat}] Done. baseline={baseline_bpb:.6f}  "
+            f"best={best_bpb_overall:.6f}  improvement={improvement:.6f}  "
+            f"level2_rounds={level2_round}"
+        )
+        return report
+
+    except Exception as exc:
+        err_text = tb.format_exc()
+        logger.error(f"[D{repeat}] FAILED:\n{err_text}")
+        error_report = {
+            "group": "D", "repeat": repeat, "status": "error",
+            "error": str(exc), "traceback": err_text,
+        }
+        _save_report(run_dir, error_report)
+        return error_report
+
+    finally:
+        _teardown_run_logging(fh)
+
+
+# ---------------------------------------------------------------------------
 # Dynamic runner module loader (for Group C patched runners)
 # ---------------------------------------------------------------------------
 
@@ -648,13 +902,13 @@ def _load_runner_module(runner_py: Path):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Ablation study: Groups A (L1), B (L1+L1.5), C (L1+L1.5+L2)",
+        description="Ablation study: Groups A (L1), B (L1+L1.5), C (L1+L1.5+L2), D (L1+L2)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "--group",
         default="all",
-        choices=["A", "B", "C", "all"],
+        choices=["A", "B", "C", "D", "all"],
         help="Which ablation group to run",
     )
     parser.add_argument(
@@ -704,7 +958,7 @@ def main() -> None:
     args = parse_args()
 
     groups_to_run: list[str] = (
-        ["A", "B", "C"] if args.group == "all" else [args.group]
+        ["A", "B", "C", "D"] if args.group == "all" else [args.group]
     )
 
     logger.info(
@@ -764,6 +1018,15 @@ def main() -> None:
                         repeat=repeat,
                         iterations=args.iterations,
                         outer_cycles=args.outer_cycles,
+                        time_budget=args.time_budget,
+                        provider=args.provider,
+                        model=args.model,
+                        autoresearch_dir=args.autoresearch_dir,
+                    )
+                elif group == "D":
+                    result = run_group_d(
+                        repeat=repeat,
+                        iterations=args.iterations,
                         time_budget=args.time_budget,
                         provider=args.provider,
                         model=args.model,
