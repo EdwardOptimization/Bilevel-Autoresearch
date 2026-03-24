@@ -120,23 +120,26 @@ def make_architecture_figure():
     # ── Level 2 ──────────────────────────────────────────────────────────────
     L2_row1_y = 12.05
     L2_row2_y = 11.05
-    L2_row1 = [(2.0, L2_row1_y, 'Explore\nliterature'),
-               (5.0, L2_row1_y, 'Critique &\nspecify'),
-               (8.0, L2_row1_y, 'Generate\nnew code')]
+    # 4 boxes spaced evenly across x=1.5..8.5
+    L2_bw = 1.9
+    L2_row1 = [(1.5, L2_row1_y, 'Explore'),
+               (3.6, L2_row1_y, 'Critique'),
+               (5.7, L2_row1_y, 'Specify'),
+               (7.8, L2_row1_y, 'Generate\nCode')]
     for x, y, lbl in L2_row1:
-        draw_box(ax, x, y, bw, bh, lbl, fontsize=9.5,
+        draw_box(ax, x, y, L2_bw, bh, lbl, fontsize=9.0,
                  facecolor=L2_face, edgecolor=L2_edge)
 
     draw_box(ax, 5.0, L2_row2_y, bw, bh, 'Inject via\nimportlib',
              fontsize=9.5, facecolor=L2_face, edgecolor=L2_edge)
 
-    # L2 row1 arrows
-    for i in range(2):
-        draw_arrow(ax, L2_row1[i][0]+bw/2, L2_row1_y,
-                   L2_row1[i+1][0]-bw/2, L2_row1_y, color=arrow_col)
+    # L2 row1 arrows (between 4 boxes)
+    for i in range(3):
+        draw_arrow(ax, L2_row1[i][0]+L2_bw/2, L2_row1_y,
+                   L2_row1[i+1][0]-L2_bw/2, L2_row1_y, color=arrow_col)
 
-    # Generate code → Inject
-    draw_arrow(ax, 8.0, L2_row1_y-bh/2,
+    # Generate Code → Inject
+    draw_arrow(ax, 7.8, L2_row1_y-bh/2,
                5.0+bw/2+0.05, L2_row2_y+bh/2+0.02,
                color=arrow_col, connectionstyle='arc3,rad=0.30')
 
@@ -285,7 +288,74 @@ def make_convergence_figure():
     print(f'Saved {out}  ({os.path.getsize(out)//1024} KB)')
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Figure 3: Level 2 Research Session Pipeline
+# ─────────────────────────────────────────────────────────────────────────────
+
+def make_level2_session_figure():
+    fig, ax = plt.subplots(figsize=(8.5, 3.2))
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 4)
+    ax.axis('off')
+
+    L2_edge = '#2d6a2d'
+    L2_face = '#edf7ed'
+    arrow_col = '#444444'
+    out_color = '#555577'
+
+    # Step boxes: (x_center, label, output_label)
+    steps = [
+        (1.1,  'Explore',       'hypotheses'),
+        (3.1,  'Critique',      'selected\nhypothesis'),
+        (5.1,  'Specify',       'spec + interface'),
+        (7.1,  'Generate\nCode','Python module'),
+        (9.1,  'Validate\n& Inject', 'pass / fail\n→ revert'),
+    ]
+
+    bw, bh = 1.55, 0.85
+    box_y = 2.45
+    out_y  = 1.35
+
+    for (x, lbl, out_lbl) in steps:
+        # main box
+        box = FancyBboxPatch(
+            (x - bw / 2, box_y - bh / 2), bw, bh,
+            boxstyle="round,pad=0.04",
+            facecolor=L2_face, edgecolor=L2_edge, linewidth=1.5, zorder=3)
+        ax.add_patch(box)
+        ax.text(x, box_y, lbl, ha='center', va='center', fontsize=9.5,
+                color='#1a1a2e', fontweight='bold', zorder=4,
+                multialignment='center')
+        # output label below
+        ax.text(x, out_y, out_lbl, ha='center', va='top', fontsize=7.8,
+                color=out_color, style='italic', zorder=4,
+                multialignment='center')
+        # downward tick from box to output label
+        ax.annotate('', xy=(x, out_y + 0.12), xytext=(x, box_y - bh / 2),
+                    arrowprops=dict(arrowstyle='->', color=out_color,
+                                   lw=0.9), zorder=2)
+
+    # horizontal arrows between boxes
+    for i in range(len(steps) - 1):
+        x1 = steps[i][0] + bw / 2
+        x2 = steps[i + 1][0] - bw / 2
+        ax.annotate('', xy=(x2, box_y), xytext=(x1, box_y),
+                    arrowprops=dict(arrowstyle='->', color=arrow_col,
+                                   lw=1.4), zorder=2)
+
+    ax.text(5.0, 3.75, 'Level 2 Research Session (4 LLM calls)',
+            ha='center', va='center', fontsize=11, fontweight='bold',
+            color=L2_edge)
+
+    plt.tight_layout(pad=0.3)
+    out = os.path.join(FIGURES_DIR, 'level2_session.pdf')
+    fig.savefig(out, bbox_inches='tight', dpi=200)
+    plt.close(fig)
+    print(f'Saved {out}  ({os.path.getsize(out)//1024} KB)')
+
+
 if __name__ == '__main__':
     make_architecture_figure()
     make_convergence_figure()
+    make_level2_session_figure()
     print('Done.')

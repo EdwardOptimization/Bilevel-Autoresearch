@@ -25,9 +25,9 @@ The systems themselves cannot perform this operation.
 
 This raises a natural question: \emph{can an outer loop perform that same
 design step autonomously?}
-Can the system read its own inner loop's code, identify structural bottlenecks,
-generate new Python code to address them, and inject that code at runtime---all
-without human involvement?
+Can the system read its own inner loop's code, identify structural
+bottlenecks, generate new Python code to address them, and inject that
+code at runtime---all without human involvement?
 
 We answer this question affirmatively.
 We present \textbf{\methodname{}}, a bilevel framework with three operational
@@ -73,7 +73,7 @@ hardware (RTX~5090).
         self-modifying autoresearch system.
   \item We report a controlled ablation showing that Level~2 produces a
         5$\times$ improvement over the Level-1 baseline ($-0.045 \pm 0.030$
-        vs.\ $-0.009 \pm 0.001$), with Level~2 autonomously generating
+        vs.\ $-0.009 \pm 0.002$), with Level~2 autonomously generating
         mechanisms drawn from four distinct algorithmic domains.
   \item We identify why Level~2 succeeds: the generated mechanisms (Tabu
         Search, Multi-Scale Bandit, Orthogonal Exploration) forced exploration

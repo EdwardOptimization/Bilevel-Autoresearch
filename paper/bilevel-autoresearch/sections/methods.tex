@@ -12,7 +12,7 @@ exact model checkpoint may vary as the API evolves); no stronger
 model is used at any outer level.
 \cref{fig:architecture} illustrates the three-level structure.
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=\columnwidth]{architecture.pdf}
   \caption{%
@@ -88,11 +88,21 @@ It conducts a 4-round structured dialogue, each round making a single LLM call:
         \texttt{runner.py} required to call it.
 \end{enumerate}
 
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=\columnwidth]{level2_session.pdf}
+  \caption{%
+    Level 2 research session.
+    Each session makes four LLM calls, producing a validated Python module
+    that modifies the inner loop's search behavior.%
+  }
+  \label{fig:level2session}
+\end{figure}
+
 The generated code is applied by patching \texttt{runner.py} in place.
-Before activation, the patched module is loaded via
-\texttt{importlib.util.spec\_from\_file\_location} with explicit
-\texttt{sys.modules} registration (required to support
-\texttt{@dataclass} decorators).
+Before activation, the patched module is loaded via \texttt{importlib}
+dynamic loading with explicit \texttt{sys.modules} registration
+(required to support \texttt{@dataclass} decorators).
 If the import succeeds, the patched runner replaces the active runner for
 subsequent inner iterations.
 If the import fails (e.g., missing dependency), the original runner is
@@ -100,8 +110,8 @@ restored from a pre-patch backup and the failure is logged.
 This validate-and-revert mechanism ensures that Level~2 failures are
 non-destructive.
 
-The separation of Level~1.5 and Level~2 serves a design purpose: Level~1.5 handles
-tactical search adjustments (which parameters to freeze, what strategy to use), while
+The separation of Level~1.5 and Level~2 serves a design purpose:
+Level~1.5 handles tactical search adjustments (which parameters to freeze, what strategy to use), while
 Level~2 handles strategic mechanism innovation (inventing new search paradigms as code).
 This separation lets Level~2 focus purely on structural improvements without being
 distracted by runtime parameter tuning.
@@ -122,6 +132,7 @@ where $f(\theta, \phi) = \valbpb{}(\theta)$ is the validation bits-per-byte of
 the model trained with configuration $\theta$ under runner mechanism $\phi$, and
 $F(\phi, \theta^*) = \valbpb{}(\theta^*)$ is the best achievable validation loss
 under $\phi$.
+We formalize this in \cref{eq:bilevel}; the complete procedure is given in \cref{alg:bilevel}.
 Level~2 approximately solves the upper problem by code generation; Level~1
 approximately solves the lower problem by LLM-guided hill climbing.
 
@@ -172,9 +183,9 @@ original baseline between repeats (verified by log inspection).
 The primary metric is $\Delta = \text{best} - \text{baseline}$ \valbpb{}
 (more negative indicates greater improvement).
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering
-\caption{Experimental groups.}
+\caption{Experimental groups. All variables (LLM, GPU, budget, baseline) are held constant across groups.}
 \label{tab:groups}
 \begin{tabular}{@{}lll@{}}
 \toprule

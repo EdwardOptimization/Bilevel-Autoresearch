@@ -11,7 +11,7 @@ session (Explore, Critique, Specify, Generate) and writes Python code that
 structurally modifies the inner loop at runtime via \texttt{importlib}.
 We evaluate three configurations on Karpathy's GPT pretraining benchmark
 (\valbpb{}) using the same DeepSeek model at every level.
-The pure inner loop (Group~A) achieves $-0.009 \pm 0.001$; adding Level~1.5 alone (Group~B) yields no reliable additional gain ($-0.007 \pm 0.006$).
+The pure inner loop (Group~A) achieves $-0.009 \pm 0.002$; adding Level~1.5 alone (Group~B) yields no reliable additional gain ($-0.006 \pm 0.006$).
 Adding Level~2 (Group~C) achieves $-0.045 \pm 0.030$, a 5$\times$ improvement
 over Group~A in two of three repeats (with high variance: $\pm 0.030$).
 Across three independent repeats, Level~2 autonomously generates mechanisms
