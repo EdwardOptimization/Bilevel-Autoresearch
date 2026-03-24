@@ -35,3 +35,4 @@ Thumbs.db
 # Secrets and credentials
 .aixiv_token
 experiments/paper_ablation/SERVERS.md
+SERVERS.md
