@@ -34,6 +34,20 @@ essentially no improvement ($-0.000$), inflating variance.
 Group~C achieves $-0.045 \pm 0.030$, a 5$\times$ improvement over Group~A.
 Two of three Group~C repeats (R1 and R3) show dramatic gains ($-0.065$ and
 $-0.058$); R2 underperformed at $-0.011$.
+\cref{fig:convergence} shows the search trajectories across all nine runs.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{convergence.pdf}
+  \caption{%
+    Running-minimum \valbpb{} vs.\ iteration for all 9 runs.
+    Thin lines: individual repeats; thick lines: group means.
+    Vertical dashed lines mark Level~2 interventions (Group~C only).
+    Group~C's R1 and R3 show a sharp drop after Level~2 mechanisms
+    guide the search toward \texttt{TOTAL\_BATCH\_SIZE} reduction.%
+  }
+  \label{fig:convergence}
+\end{figure}
 
 \subsection{Level~2 Mechanism Inventory}
 
@@ -58,7 +72,7 @@ R1 & 1 & Tabu Search Manager     & Combinatorial opt.    & \checkmark & \checkma
 R1 & 2 & Helper class            & ---                   & \checkmark & \checkmark \\
 R2 & 1 & Multi-Scale Bandit Proposer & Online learning / MAB & \checkmark & \checkmark \\
 R2 & 2 & Helper class            & ---                   & \checkmark & \checkmark \\
-R3 & 1 & GP Regressor            & Bayesian optimization & \checkmark$^{*}$ & reverted \\
+R3 & 1 & GP Regressor            & Bayesian optimization & $\times^{*}$ & reverted \\
 R3 & 2 & Systematic Orthogonal Exploration & DOE        & \checkmark & \checkmark \\
 \bottomrule
 \multicolumn{6}{@{}l}{%
@@ -66,6 +80,10 @@ R3 & 2 & Systematic Orthogonal Exploration & DOE        & \checkmark & \checkmar
 }
 \end{tabular}
 \end{table}
+
+The two ``Helper class'' entries are utility classes generated alongside the primary
+mechanisms (e.g., data structures for tracking parameter history); they are auxiliary
+to the named mechanism in each round.
 
 The three active named mechanisms are:
 \textbf{Tabu Search Manager} (maintains a tabu list of recently visited

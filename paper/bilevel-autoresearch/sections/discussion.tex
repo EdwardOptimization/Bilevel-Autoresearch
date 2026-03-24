@@ -26,9 +26,10 @@ is large relative to the within-group variance, providing meaningful evidence
 that Level~2 adds value beyond Level~1.5.
 
 \textbf{H3 (Level~2 discovers novel mechanisms autonomously): Supported.}
-Across three independent repeats, Level~2 generated mechanisms from four
-distinct domains (combinatorial optimization, online learning, Bayesian
-optimization, DOE) without being told which domains to consider.
+Across three independent repeats, Level~2 generated mechanisms from three
+distinct active domains (combinatorial optimization, online learning, DOE)
+without being told which domains to consider (a fourth domain, Bayesian
+optimization, was attempted but reverted due to a missing dependency).
 Code generation succeeded on the first attempt in all six sessions (zero
 retries).
 Five of six mechanisms passed import validation and were activated.
@@ -66,14 +67,14 @@ than Groups~A and~B, a minor but non-zero cost.
 
 \paragraph{Small sample size.}
 Three repeats per group is insufficient for rigorous statistical comparison.
-Group~C's standard deviation ($\pm 0.030$) is 67\% of its mean, indicating
+Group~C's standard deviation ($\pm 0.030$) is 67\% of its absolute mean, indicating
 high variability.
 Reliable estimates would require $n \geq 10$ repeats per group.
 
 \paragraph{Baseline variance.}
 Baseline \valbpb{} varies across repeats (1.094--1.114) due to training
 randomness from data ordering and weight initialization.
-Using $\Delta = \text{baseline} - \text{best}$ mitigates this but does not
+Using $\Delta = \text{best} - \text{baseline}$ mitigates this but does not
 eliminate it; a lower baseline gives less headroom for improvement.
 Future work should use fixed random seeds or report baseline-normalized metrics.
 
@@ -113,8 +114,8 @@ those priors.
 The Level~2 prompt instructs the model to ``propose mechanism improvements''
 but does not suggest which algorithmic domains to consider.
 Across three independent repeats, the model independently chose combinatorial
-optimization, online learning, Bayesian optimization, and design of
-experiments.
+optimization, online learning, and design of experiments (plus a Bayesian
+optimization attempt that was reverted due to a missing dependency).
 The LLM's breadth of knowledge therefore enables genuine exploration at the
 mechanism level, not just at the configuration level.
 
@@ -123,8 +124,8 @@ mechanism level, not just at the configuration level.
 Key directions for extending this work include:
 (1) scaling to $n \geq 10$ repeats with fixed random seeds for statistical
     power;
-(2) constraining Level~2 to pure-Python code without external imports, avoiding
-    dependency failures;
+(2) pre-installing common scientific libraries (e.g., \texttt{sklearn}) on experiment
+    servers to expand Level~2's mechanism vocabulary;
 (3) evaluating on multiple benchmarks (different model sizes, tasks, budgets)
     to assess generalization;
 (4) adding a fourth group (Level~1 with \texttt{simple\_mode=False}) to

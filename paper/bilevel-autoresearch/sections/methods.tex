@@ -7,8 +7,23 @@
 The inner loop (Level~1) optimizes the task; the outer loop (Level~1.5)
 optimizes the inner loop's search parameters; Level~2 optimizes the inner
 loop's search \emph{mechanism} by generating and injecting new code.
-All levels share the same DeepSeek \texttt{deepseek-chat} model; no stronger
+All levels share the same DeepSeek \texttt{deepseek-chat} model (accessed March 2026;
+exact model checkpoint may vary as the API evolves); no stronger
 model is used at any outer level.
+\cref{fig:architecture} illustrates the three-level structure.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{architecture.pdf}
+  \caption{%
+    \methodname{} architecture.
+    Level~1 (blue) runs the standard propose--train--evaluate loop.
+    Level~1.5 (amber) adjusts search parameters every 5 iterations.
+    Level~2 (green) generates new Python mechanisms via a 4-round
+    research session and injects them at runtime.%
+  }
+  \label{fig:architecture}
+\end{figure}
 
 \subsection{Level~1: Inner Autoresearch Loop}
 
@@ -84,6 +99,13 @@ If the import fails (e.g., missing dependency), the original runner is
 restored from a pre-patch backup and the failure is logged.
 This validate-and-revert mechanism ensures that Level~2 failures are
 non-destructive.
+
+The separation of Level~1.5 and Level~2 serves a design purpose: Level~1.5 handles
+tactical search adjustments (which parameters to freeze, what strategy to use), while
+Level~2 handles strategic mechanism innovation (inventing new search paradigms as code).
+This separation lets Level~2 focus purely on structural improvements without being
+distracted by runtime parameter tuning.
+The experiment tests whether this separation produces better results than either alone.
 
 \subsection{Bilevel Optimization Formulation}
 

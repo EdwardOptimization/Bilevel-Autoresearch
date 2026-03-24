@@ -13,12 +13,17 @@ that parameter-level adjustment is insufficient to escape the LLM's
 deterministic search patterns; structural modification of the loop is required.
 
 Level~2's mechanisms---Tabu Search Manager, Multi-Scale Bandit Proposer, and
-Systematic Orthogonal Exploration---were drawn from four distinct algorithmic
+Systematic Orthogonal Exploration---were drawn from three distinct algorithmic
 domains and discovered without human specification, across three independent
-repeats.
+repeats (a fourth domain, Bayesian optimization, was attempted but reverted
+due to a missing dependency).
 These mechanisms succeeded by forcing exploration of a search direction
 (\texttt{TOTAL\_BATCH\_SIZE} reduction) that the LLM's default priors
 systematically avoid.
+
+Code, experiment logs, and all Level~2 generated mechanisms are available at
+\url{https://github.com/EdwardOptimization/Bilevel-Autoresearch}.
+The paper is available at \url{https://aixiv.science/abs/aixiv.260323.000006}.
 
 The core principle is validated: \emph{autoresearch can research itself.}
 The outer loop need not be human-designed; the same model that runs the inner
