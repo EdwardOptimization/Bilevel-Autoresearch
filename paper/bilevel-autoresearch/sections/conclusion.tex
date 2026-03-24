@@ -1,34 +1,19 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented \methodname{}, a bilevel framework in which an outer loop
-autonomously discovers and injects structural changes into an inner autoresearch
-loop.
-The key result is that Level~2---an autonomous mechanism research agent that
-writes and loads Python code at runtime---produces a 5$\times$ improvement in
-\valbpb{} over the Level-1 baseline on Karpathy's GPT pretraining benchmark,
-using the same DeepSeek model at every level.
-Level~1.5 alone does not reliably improve over the pure inner loop, confirming
-that parameter-level adjustment is insufficient to escape the LLM's
-deterministic search patterns; structural modification of the loop is required.
-Group~D (Level~1 + Level~2, without Level~1.5) achieves $-0.034 \pm 0.031$,
-confirming that Level~2 is the key driver of improvement and that Level~1.5
-is not essential when mechanism research is present across four experimental groups.
+\methodname{} demonstrates that an LLM can autonomously improve its own
+autoresearch loop by generating and injecting new search mechanisms at runtime.
+On Karpathy's GPT benchmark, Level~2 produces a 5$\times$ \valbpb{}
+improvement over the inner loop alone ($-0.045$ vs.\ $-0.009$), while
+parameter-level adjustment (Level~1.5) yields no reliable gain.
+The generated mechanisms---drawn from combinatorial optimization, online
+learning, and design of experiments---succeed by forcing exploration of
+directions the LLM's default search path avoids.
 
-Level~2's mechanisms---Tabu Search Manager, Multi-Scale Bandit Proposer, and
-Systematic Orthogonal Exploration---were drawn from three distinct algorithmic
-domains and discovered without human specification, across three independent
-repeats (a fourth domain, Bayesian optimization, was attempted but reverted
-due to a missing dependency).
-These mechanisms succeeded by forcing exploration of a search direction
-(\texttt{TOTAL\_BATCH\_SIZE} reduction) that the LLM's default priors
-systematically avoid.
-
-Code, experiment logs, and all Level~2 generated mechanisms are available at
+Code and experiment logs are available at
 \url{https://github.com/EdwardOptimization/Bilevel-Autoresearch}.
-The paper is available at \url{https://aixiv.science/abs/aixiv.260323.000006}.
 
 The core principle is validated: \emph{autoresearch can research itself.}
 The outer loop need not be human-designed; the same model that runs the inner
-loop can generate it, discovering structural improvements that previously
-required a human researcher to write.
+loop can generate structural improvements that previously required a human
+researcher to write.

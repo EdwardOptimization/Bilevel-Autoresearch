@@ -3,14 +3,10 @@
 
 \subsection{Framework Overview}
 
-\methodname{} is organized as three nested operational levels.
-The inner loop (Level~1) optimizes the task; the outer loop (Level~1.5)
-optimizes the inner loop's search parameters; Level~2 optimizes the inner
-loop's search \emph{mechanism} by generating and injecting new code.
-All levels share the same DeepSeek \texttt{deepseek-chat} model (accessed March 2026;
-exact model checkpoint may vary as the API evolves); no stronger
-model is used at any outer level.
-\cref{fig:architecture} illustrates the three-level structure.
+\methodname{} has three nested levels (\cref{fig:architecture}):
+Level~1 optimizes the task; Level~1.5 adjusts search parameters;
+Level~2 generates new search \emph{mechanisms} as Python code.
+All levels use the same DeepSeek \texttt{deepseek-chat} model.
 
 \begin{figure}[!htbp]
   \centering
@@ -99,42 +95,12 @@ It conducts a 4-round structured dialogue, each round making a single LLM call:
   \label{fig:level2session}
 \end{figure}
 
-The generated code is applied by patching \texttt{runner.py} in place.
-Before activation, the patched module is loaded via \texttt{importlib}
-dynamic loading with explicit \texttt{sys.modules} registration
-(required to support \texttt{@dataclass} decorators).
-If the import succeeds, the patched runner replaces the active runner for
-subsequent inner iterations.
-If the import fails (e.g., missing dependency), the original runner is
-restored from a pre-patch backup and the failure is logged.
+The generated code patches \texttt{runner.py} in place and is validated
+via \texttt{importlib} dynamic loading before activation.
+If the import succeeds, the patched runner replaces the active one;
+if it fails, the original is restored from a pre-patch backup.
 This validate-and-revert mechanism ensures that Level~2 failures are
 non-destructive.
-
-The separation of Level~1.5 and Level~2 serves a design purpose:
-Level~1.5 handles tactical search adjustments (which parameters to freeze, what strategy to use), while
-Level~2 handles strategic mechanism innovation (inventing new search paradigms as code).
-This separation lets Level~2 focus purely on structural improvements without being
-distracted by runtime parameter tuning.
-The experiment tests whether this separation produces better results than either alone.
-
-\subsection{Bilevel Optimization Formulation}
-
-Let $\phi$ denote the runner code (the mechanism) and $\theta$ the
-configuration of \texttt{train.py}.
-The bilevel objective is:
-\begin{equation}
-  \min_{\phi}\; F\!\left(\phi,\, \theta^{*}(\phi)\right)
-  \quad \text{s.t.} \quad
-  \theta^{*}(\phi) \;=\; \arg\min_{\theta}\; f(\theta, \phi),
-  \label{eq:bilevel}
-\end{equation}
-where $f(\theta, \phi) = \valbpb{}(\theta)$ is the validation bits-per-byte of
-the model trained with configuration $\theta$ under runner mechanism $\phi$, and
-$F(\phi, \theta^*) = \valbpb{}(\theta^*)$ is the best achievable validation loss
-under $\phi$.
-We formalize this in \cref{eq:bilevel}; the complete procedure is given in \cref{alg:bilevel}.
-Level~2 approximately solves the upper problem by code generation; Level~1
-approximately solves the lower problem by LLM-guided hill climbing.
 
 \subsection{Algorithm}
 

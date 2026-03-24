@@ -24,10 +24,7 @@ identifying a bottleneck, and writing new code to address it.
 The systems themselves cannot perform this operation.
 
 This raises a natural question: \emph{can an outer loop perform that same
-design step autonomously?}
-Can the system read its own inner loop's code, identify structural
-bottlenecks, generate new Python code to address them, and inject that
-code at runtime---all without human involvement?
+design step---reading code, identifying bottlenecks, writing new code---autonomously?}
 
 We answer this question affirmatively (\cref{fig:concept}).
 We present \textbf{\methodname{}}, a bilevel framework with two
@@ -50,32 +47,18 @@ Both loops use the same LLM---any improvement comes from the bilevel
 \end{figure}
 
 We evaluate the framework on Karpathy's GPT pretraining benchmark
-(\valbpb{}, 300-second training budget, RTX~5090) with a controlled
-four-group ablation that isolates the contribution of each component
-(details in \cref{sec:methods}).
+with a controlled four-group ablation (\cref{sec:methods}).
 
 \paragraph{Contributions.}
 \begin{enumerate}
-  \item We formalize autoresearch as a bilevel optimization problem in which the
-        upper level optimizes the search \emph{mechanism} (runner code) and the
-        lower level optimizes the task (training configuration), and demonstrate
-        that the upper level can be solved by LLM code generation.
-  \item We implement Level~2 mechanism research via a 4-round LLM dialogue and
-        runtime code injection, establishing a concrete realization of a
-        self-modifying autoresearch system.
-  \item We report a controlled ablation showing that Level~2 produces a
-        5$\times$ improvement over the Level-1 baseline ($-0.045 \pm 0.030$
-        vs.\ $-0.009 \pm 0.002$), with Level~2 autonomously generating
-        mechanisms drawn from four distinct algorithmic domains.
-  \item We identify why Level~2 succeeds: the generated mechanisms (Tabu
-        Search, Multi-Scale Bandit, Orthogonal Exploration) forced exploration
-        of \texttt{TOTAL\_BATCH\_SIZE} \emph{reduction}, a direction that the
-        LLM's default search path systematically avoids due to an implicit bias
-        toward larger batches.
+  \item We formalize autoresearch as a bilevel optimization problem and
+        implement the outer level via a 4-round LLM dialogue that generates
+        and injects new search mechanisms as Python code at runtime.
+  \item A controlled four-group ablation shows that mechanism research
+        (Level~2) produces a 5$\times$ improvement over the inner loop alone
+        ($-0.045 \pm 0.030$ vs.\ $-0.009 \pm 0.002$), while parameter-level
+        adjustment (Level~1.5) yields no reliable gain.
+  \item We identify why: the generated mechanisms (Tabu Search, Bandit,
+        Orthogonal Exploration) force exploration of directions the LLM's
+        default search path systematically avoids.
 \end{enumerate}
-
-\Cref{sec:related} reviews related work.
-\Cref{sec:methods} describes the framework in detail.
-\Cref{sec:results} presents ablation results.
-\Cref{sec:discussion} interprets hypotheses, failure modes, and limitations.
-\Cref{sec:conclusion} concludes.

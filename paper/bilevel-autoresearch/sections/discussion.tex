@@ -3,7 +3,7 @@
 
 \subsection{Hypothesis Testing}
 
-The experimental design is motivated by three hypotheses.
+The experimental design is motivated by four hypotheses.
 
 \textbf{H1 (Group~B $>$ Group~A): Not supported.}
 Group~B's mean improvement ($-0.006 \pm 0.006$) is numerically worse than
@@ -42,30 +42,6 @@ repeats; Level~1.5 does not appear to be a necessary condition.
 The caveat is that D's R1 produced essentially no improvement, whereas
 Group~C had no zero-improvement repeat, suggesting Level~1.5 may provide
 modest robustness by enriching the search trace that Level~2 reads.
-
-\subsection{Why Level~1.5 Alone Is Insufficient}
-
-Level~1.5 can diagnose search problems---it correctly identifies when a
-parameter has been attempted repeatedly without improvement---and it can
-redirect search by adjusting which parameters are active.
-However, it is structurally limited to operating within the existing search
-framework.
-It cannot change how proposals are generated, modify the acceptance criterion,
-add pre-filtering steps, or introduce new search paradigms such as tabu lists,
-bandit selection, or orthogonal sampling.
-Only Level~2 can produce such code changes.
-This structural ceiling explains why H1 is not supported: parameter
-redirection alone is insufficient to escape the LLM's deterministic
-proposal patterns.
-
-Conversely, Group~D shows that Level~1.5 is not essential when Level~2 is
-present.
-Group~D achieves comparable improvements to Group~C without any parameter
-freezing or strategy injection.
-Level~1.5 may provide modest value through trace enrichment---Group~C's mean
-($-0.045$) is slightly higher than Group~D's ($-0.034$)---but the dominant
-factor is Level~2's mechanism generation, which can independently direct
-search toward the \texttt{TOTAL\_BATCH\_SIZE} reduction direction.
 
 \subsection{Why Group~C's R2 Underperformed}
 
@@ -116,38 +92,11 @@ was not installed.
 The validate-and-revert mechanism handled this correctly, but the exposure to
 arbitrary dependencies remains a reliability risk.
 
-\subsection{Unexpected Findings}
-
-\paragraph{Group~A's search is near-deterministic.}
-Given the same baseline \texttt{train.py}, DeepSeek generates almost the same
-proposal sequence across all three repeats.
-Group~A's three repeats are therefore not independent samples in the usual
-sense: they are three runs of the same near-deterministic process, perturbed
-only by training noise.
-This determinism is itself a finding: LLMs hold strong priors about which
-hyperparameter changes to try first, and the inner loop alone cannot escape
-those priors.
-
-\paragraph{Level~2 selects diverse domains without guidance.}
-The Level~2 prompt instructs the model to ``propose mechanism improvements''
-but does not suggest which algorithmic domains to consider.
-Across three independent repeats, the model independently chose combinatorial
-optimization, online learning, and design of experiments (plus a Bayesian
-optimization attempt that was reverted due to a missing dependency).
-The LLM's breadth of knowledge therefore enables genuine exploration at the
-mechanism level, not just at the configuration level.
-
 \subsection{Future Work}
 
-Key directions for extending this work include:
-(1) scaling to $n \geq 10$ repeats with fixed random seeds for statistical
-    power;
-(2) pre-installing common scientific libraries (e.g., \texttt{sklearn}) on experiment
-    servers to expand Level~2's mechanism vocabulary;
-(3) evaluating on multiple benchmarks (different model sizes, tasks, budgets)
-    to assess generalization;
-(4) adding a fourth group (Level~1 with \texttt{simple\_mode=False}) to
-    isolate the contribution of pre-baked mechanisms vs.\ autonomously
-    discovered ones; and
-(5) investigating whether Level~2's code generation quality can be improved
-    by providing a richer interface specification or a test harness.
+Key directions include:
+(1) scaling to $n \geq 10$ repeats with fixed random seeds for statistical power;
+(2) evaluating on multiple benchmarks (different model sizes, tasks, budgets)
+    to assess generalization; and
+(3) investigating whether Level~2's code generation quality improves with
+    a richer interface specification or a test harness.

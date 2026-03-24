@@ -47,10 +47,10 @@ Level~1.5 is not essential when Level~2 is present.
   \centering
   \includegraphics[width=\columnwidth]{convergence.pdf}
   \caption{%
-    Running-minimum \valbpb{} vs.\ iteration for all 9 runs.
+    Running-minimum \valbpb{} vs.\ iteration for all 12 runs
+    (4 groups $\times$ 3 repeats).
     Thin lines: individual repeats; thick lines: group means.
-    Vertical dashed lines mark Level~2 interventions at iterations 10 and 20 (Group~C only).
-    Group~C's R1 and R3 show a sharp drop after Level~2 mechanisms
+    Groups~C and~D show sharp drops after Level~2 mechanisms
     guide the search toward \texttt{TOTAL\_BATCH\_SIZE} reduction.%
   }
   \label{fig:convergence}
@@ -92,6 +92,48 @@ The two ``Helper class'' entries are utility classes generated alongside the pri
 mechanisms (e.g., data structures for tracking parameter history); they are auxiliary
 to the named mechanism in each round.
 
+\cref{fig:generated_code} shows a representative excerpt from one generated
+mechanism (Tabu Search Manager, Group~C R1).
+This code was written entirely by DeepSeek during a Level~2 research session;
+no human edited it before injection.
+
+\begin{figure}[!htbp]
+\begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize,
+  frame=single, numbers=left, xleftmargin=2em]
+class TabuSearchManager:
+  def __init__(self, tenure=5, thresholds=None):
+    self.tabu_list = []
+    self.tenure = tenure
+    self.distance_thresholds = thresholds or {}
+
+  def is_tabu(self, config, iteration):
+    # Remove expired entries
+    self.tabu_list = [e for e in self.tabu_list
+                      if iteration <= e["expires_at"]]
+    for entry in self.tabu_list:
+      for param, tabu_val in entry["config"].items():
+        if param in config:
+          try:
+            diff = abs(float(config[param])
+                     - float(tabu_val))
+            thresh = self.distance_thresholds.get(
+                     param, 0.0)
+            if diff <= thresh:
+              return True  # too close, blocked
+          except (ValueError, TypeError):
+            if config[param] == tabu_val:
+              return True
+    return False  # allowed
+\end{lstlisting}
+\caption{%
+  Excerpt from a Level~2 generated mechanism (Tabu Search Manager).
+  This code---written entirely by the LLM during a research session---prevents
+  the inner loop from revisiting recently explored parameter regions,
+  breaking the deterministic proposal patterns observed in Group~A.%
+}
+\label{fig:generated_code}
+\end{figure}
+
 The three active named mechanisms are:
 \textbf{Tabu Search Manager} (maintains a tabu list of recently visited
 parameter regions, preventing the LLM from reproposing the same changes);
@@ -105,7 +147,7 @@ domains to consider.
 
 \subsection{Search Behavior Analysis}
 
-The three groups exhibit qualitatively different search trajectories.
+The four groups exhibit qualitatively different search trajectories.
 
 \paragraph{Group~A: near-deterministic repetition.}
 All three repeats follow nearly the same proposal sequence from the same
