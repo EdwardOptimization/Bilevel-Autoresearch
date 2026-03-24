@@ -92,6 +92,16 @@ was not installed.
 The validate-and-revert mechanism handled this correctly, but the exposure to
 arbitrary dependencies remains a reliability risk.
 
+\paragraph{Prompt-induced domain bias.}
+The Level~2 prompt explicitly suggests candidate domains (combinatorial
+optimization, reinforcement learning, evolutionary algorithms, Bayesian
+optimization).
+This guidance is a double-edged sword: it prevents the agent from generating
+irrelevant or degenerate mechanisms, but it also constrains the search space
+of discoverable mechanisms to domains the prompt author anticipated.
+Whether Level~2 would discover equally effective---or entirely
+different---mechanisms under an unconstrained prompt remains untested.
+
 \subsection{Future Work}
 
 Key directions include:
