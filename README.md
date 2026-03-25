@@ -21,6 +21,8 @@ Outer loop:  Optimizes how the inner loop works (analyze trace → modify mechan
 
 Both levels use the same pattern: **propose × evaluate × iterate**. The inner loop improves the task. The outer loop improves the inner loop — not by tuning prompts, but by structurally changing how it searches.
 
+**Autoresearch anything with a measurable objective.** The same bilevel principle applies to project management, multi-agent coordination, experiment scheduling, and the research process itself.
+
 **Why 3 layers in the experiment?** The design is bilevel (inner + outer), but in practice we split the outer loop into two responsibilities for cleaner separation of concerns:
 
 | Layer | Role | What it changes |
