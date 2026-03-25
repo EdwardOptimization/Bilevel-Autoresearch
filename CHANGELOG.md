@@ -6,7 +6,7 @@
 - Training optimization domain on Karpathy's GPT benchmark
 - Level 2 mechanism research via DeepSeek code generation
 - Controlled ablation experiment (3×3 repeats, Level 2 improves 5× over Level 1)
-- Paper submitted to AISC2026 (aixiv.260323.000006)
+- Paper submitted to AISC2026 (aixiv.260323.000006) and arXiv (arXiv:2603.23420)
 - BaseMechanismResearcher shared base class
 - 110 unit tests (llm_client, pipeline, runner, state, inner_loop, train_opt, mechanism_research, skills)
 
