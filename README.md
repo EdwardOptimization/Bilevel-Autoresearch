@@ -33,6 +33,12 @@ Both levels use the same pattern: **propose × evaluate × iterate**. The inner 
 
 Level 1.5 handles tactical adjustments ("stop searching WEIGHT_DECAY, focus on LR"). Level 2 handles strategic innovation ("invent a Tabu Search mechanism to prevent repetitive proposals"). Separating them lets Level 2 focus purely on mechanism discovery without being distracted by parameter tuning.
 
+### The Ultimate Goal: Recursive Bootstrapping
+
+Not only does Level 2 generate mechanisms to accelerate Level 1, but the architecture inherently supports **recursive mechanism feedback**. 
+
+If Level 2 discovers that a mechanism (e.g., parallel multi-agent debate, persistent memory, or Tabu search) significantly improves Level 1's search efficiency, **this same mechanism can be abstracted and applied inversely to Level 2 itself.** The system learns how to learn, and then applies those lessons to its own meta-learning process. This moves the framework beyond automated optimization and towards a truly self-improving digital ecosystem.
+
 ## Key Result: Controlled Ablation Experiment
 
 On Karpathy's GPT pretraining benchmark (val_bpb, 300s budget, RTX 5090), we ran a controlled ablation with **3 groups × 3 independent repeats × 30 iterations**, using the **same LLM (DeepSeek)** for all levels:
