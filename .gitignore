@@ -5,7 +5,8 @@ config/local.yaml
 # Runtime artifacts (don't commit research runs)
 artifacts/
 memory/
-skills/
+skills/research-evo.md
+!skills/level2-research/
 .memsearch/
 
 # Python
