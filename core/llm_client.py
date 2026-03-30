@@ -152,7 +152,12 @@ def _call_openai_compat(
     response = client.chat.completions.create(
         model=model, messages=messages, max_tokens=max_tokens
     )
-    return response.choices[0].message.content or ""
+    msg = response.choices[0].message
+    content = msg.content or ""
+    # Reasoning models (e.g. GLM-5.1, DeepSeek-R1) put output in reasoning_content
+    if not content and hasattr(msg, "reasoning_content") and msg.reasoning_content:
+        content = msg.reasoning_content
+    return content
 
 
 def _call_anthropic(

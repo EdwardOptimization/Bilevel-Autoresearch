@@ -152,8 +152,6 @@ Structural improvements (Level 2 — Translation Theory):
 
 from __future__ import annotations
 
-
-
 import json
 import logging
 import math
@@ -164,11 +162,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
-
 from core.llm_client import LLMClient
-
-
 
 from .config import HYPERPARAM_NAMES, SearchConfig
 from .mechanisms import (
@@ -200,8 +194,6 @@ from .mechanisms import (
     TargetOfOpportunity,
     TransgenicInsertion,
 )
-
-
 
 logger = logging.getLogger(__name__)
 
