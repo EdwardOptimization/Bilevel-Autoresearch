@@ -5,7 +5,7 @@ config/local.yaml
 # Runtime artifacts (don't commit research runs)
 artifacts/
 memory/
-skills/research-evo.md
+skills/*
 !skills/level2-research/
 .memsearch/
 
