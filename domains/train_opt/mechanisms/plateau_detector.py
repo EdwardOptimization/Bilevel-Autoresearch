@@ -27,6 +27,8 @@ class PlateauDetector:
 
     def record(self, changes: dict, val_bpb: float, best_bpb_before: float, status: str) -> None:
         """Record a proposal outcome."""
+        if status == "crash":
+            return  # Crash results have val_bpb=0 which would corrupt delta
         params = set(changes.keys())
         delta = val_bpb - best_bpb_before  # negative = improvement
         self._recent.append((params, delta, status))
