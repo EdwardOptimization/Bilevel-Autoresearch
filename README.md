@@ -41,13 +41,14 @@ If Level 2 discovers that a mechanism (e.g., parallel multi-agent debate, persis
 
 ## Key Result: Controlled Ablation Experiment
 
-On Karpathy's GPT pretraining benchmark (val_bpb, 300s budget, RTX 5090), we ran a controlled ablation with **3 groups × 3 independent repeats × 30 iterations**, using the **same LLM (DeepSeek)** for all levels:
+On Karpathy's GPT pretraining benchmark (val_bpb, 300s budget, RTX 5090), we ran a controlled ablation with **4 groups × 3 independent repeats × 30 iterations**, using the **same LLM (DeepSeek)** for all levels:
 
 | Group | What it does | Mean Δval_bpb | vs Group A |
 |-------|-------------|--------------|------------|
-| **A** — Level 1 | Standard autoresearch (propose → train → keep/discard) | -0.009 ± 0.001 | 1× |
-| **B** — Level 1 + 1.5 | + Outer loop adjusts search config | -0.007 ± 0.006 | 0.8× |
+| **A** — Level 1 | Standard autoresearch (propose → train → keep/discard) | -0.009 ± 0.002 | 1× |
+| **B** — Level 1 + 1.5 | + Outer loop adjusts search config | -0.006 ± 0.006 | 0.7× |
 | **C** — Level 1 + 1.5 + 2 | + Outer loop generates new mechanisms as code | **-0.045 ± 0.030** | **5×** |
+| **D** — Level 1 + 2 | + Mechanisms without config adjustment | -0.034 ± 0.031 | 3.8× |
 
 *Baseline val_bpb ≈ 1.10. More negative = better. 3 independent repeats × 30 iterations each.* The outer loop autonomously generated Python code for new search mechanisms, dynamically loaded them via `importlib`, and injected them into the running inner loop.
 
