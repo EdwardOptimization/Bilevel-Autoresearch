@@ -31,4 +31,11 @@ with dedicated tests and CI coverage. Experimental run artifacts and research
 reports can remain on this branch, or be published separately as versioned
 research artifacts.
 
+## Review attribution
+
+Technical review, artifact audit, and evidence synthesis for this status
+decision were conducted with assistance from **GPT-5.6-sol (xhigh reasoning)**,
+under maintainer supervision. The final repository decision remains the
+maintainer's responsibility.
+
 Status recorded by the maintainers on 2026-07-23.
